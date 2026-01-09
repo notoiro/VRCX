@@ -59,13 +59,14 @@
                         v-if="scope.row.location && scope.row.type !== 'Location'"
                         type="info"
                         effect="plain"
-                        size="small">
+                        size="small"
+                        :class="'color_'+scope.row.type.toLowerCase()">
                         <span
                             class="x-link"
                             @click="showWorldDialog(scope.row.location)"
                             v-text="t('view.game_log.filters.' + scope.row.type)"></span>
                     </el-tag>
-                    <el-tag v-else type="info" effect="plain" size="small">
+                    <el-tag v-else type="info" effect="plain" size="small" :class="'color_'+scope.row.type.toLowerCase()">
                         <span v-text="t('view.game_log.filters.' + scope.row.type)"></span>
                     </el-tag>
                 </template>
