@@ -11,6 +11,11 @@
 
 VRCX is an assistant/companion application for VRChat that provides information about and helps you accomplish various things related to VRChat in a more convenient fashion than relying on the plain VRChat client (desktop or VR), or website alone. It also includes some other neat features outlined below.
 
+# 本家からの変更
+
+- フィードの種類の列に色をつけるように。
+
+
 # Getting Started
 
 <div align="center">
