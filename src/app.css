@@ -51,7 +51,7 @@
         var(--el-color-primary) 12%,
         transparent
     );
-    --el-bg-color: var(--color-white);
+    --el-bg-color: var(--color-neutral-50);
     --el-bg-color-page: var(--color-zinc-50);
     --el-bg-color-overlay: var(--color-white);
 
@@ -1466,4 +1466,73 @@ i.x-status-icon.red {
 
 .el-alert__title {
     padding: 5px;
+}
+
+/* NOTE: 本当はもうちょっと最近のCSSっぽい書き方するべきなんだろうけどなんかここらへん変更ありそうなので変更来た頃に直す */
+
+span.color_online{
+  color: #5dc65d !important;
+}
+
+span.color_offline{
+  color: #e85a33 !important;
+}
+
+span.color_gps{
+  color: #41c6c6 !important;
+}
+
+span.color_status{
+  color: #eacc52 !important;
+}
+
+span.color_bio{
+  color: #bc52ea !important;
+}
+
+span.color_avatar{
+  color: #ea52d6 !important;
+}
+
+span.color_location{
+  color: #41c6c6 !important;
+}
+
+span.color_onplayerjoined{
+  color: #5dc65d !important;
+}
+
+span.color_onplayerleft{
+  color: #e85a33 !important;
+}
+
+span.color_videoplay{
+  color: #ea52d6 !important;
+}
+
+span.color_event{
+  color: #bc52ea !important;
+}
+
+span.color_external{
+  color: #bc52ea !important;
+}
+
+span.color_stringload{
+  color: #bc52ea !important;
+}
+
+span.color_imageload{
+  color: #bc52ea !important;
+}
+
+div.no-location{
+  color: #744047 !important;
+}
+
+
+tbody span.el-tag.el-tag--info{
+  background-color: unset;
+  color: unset;
+  border: unset;
 }
