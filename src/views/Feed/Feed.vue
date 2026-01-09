@@ -140,12 +140,11 @@
 
             <el-table-column :label="t('table.feed.type')" prop="type" width="130">
                 <template #default="scope">
-                    <el-tag type="info" effect="plain" size="small">{{
+                    <el-tag type="info" effect="plain" size="small" :class="'color_'+scope.row.type.toLowerCase()">{{
                         t('view.feed.filters.' + scope.row.type)
                     }}</el-tag>
                 </template>
             </el-table-column>
-
             <el-table-column :label="t('table.feed.user')" prop="displayName" width="190">
                 <template #default="scope">
                     <span
