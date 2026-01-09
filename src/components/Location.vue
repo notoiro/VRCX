@@ -9,7 +9,11 @@
                 :show-after="300"
                 placement="top">
                 <div
-                    :class="['x-location', { 'x-link': link && location !== 'private' && location !== 'offline' }]"
+                    :class="[
+                      'x-location',
+                      { 'x-link': link && location !== 'private' && location !== 'offline' },
+                      { 'no-location': location === 'private' || location === 'offline' || location === 'traveling' }
+                    ]"
                     class="inline-flex min-w-0 flex-nowrap items-center overflow-hidden"
                     @click="handleShowWorldDialog">
                     <el-icon :class="['is-loading']" class="mr-1" v-if="isTraveling"><Loading /></el-icon>
