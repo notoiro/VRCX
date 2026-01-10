@@ -29,6 +29,7 @@ Beta/nightly build available [here](https://vrcx.app/github/nightly) or in-app `
 
 - フィードとゲームログの種類の列に色をつけるように。
 - ロケーションの表示でPrivate, Offline, Travelingを別の色にするように
+- 日本語訳を微調整
 
 <div align="center">
 
