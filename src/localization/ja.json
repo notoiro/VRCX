@@ -207,7 +207,7 @@
             "clear_tooltip": "クリア",
             "delete_tooltip": "削除",
             "unavailable_tooltip": "利用不可",
-            "private": "プライベート",
+            "private": "Private",
             "sort_by": "並べ替え:",
             "select_avatar_tooltip": "アバターを使用"
         },
@@ -700,7 +700,7 @@
                     "desktop": "デスクトップ",
                     "join_button": "参加",
                     "powered_by_vrcx": "Powered by VRCX",
-                    "private_world": "プライベート"
+                    "private_world": "Private"
                 }
             },
             "pictures": {
