@@ -67,10 +67,10 @@
             "field": {
                 "username": "ユーザーネームまたはメールアドレス",
                 "password": "パスワード",
-                "saveCredentials": "資格情報を保存",
+                "saveCredentials": "ログイン情報を保存",
                 "devEndpoint": "開発者用エンドポイント",
                 "endpoint": "エンドポイント",
-                "websocket": "ウェブソケット"
+                "websocket": "WebSocket"
             }
         },
         "feed": {
@@ -83,7 +83,7 @@
                 "Offline": "オフライン",
                 "Status": "ステータス",
                 "Avatar": "アバター",
-                "Bio": "自己紹介"
+                "Bio": "Bio"
             }
         },
         "friends_locations": {
@@ -102,10 +102,10 @@
                 "OnPlayerJoined": "プレイヤー参加",
                 "OnPlayerLeft": "プレイヤー退出",
                 "PortalSpawn": "ポータル作成",
-                "VideoPlay": "動画を再生",
+                "VideoPlay": "動画再生",
                 "Event": "イベント",
                 "External": "外的",
-                "StringLoad": "URIの読み込み",
+                "StringLoad": "文字列の読み込み",
                 "ImageLoad": "画像の読み込み"
             }
         },
@@ -138,8 +138,8 @@
                 "refresh_tooltip": "自分のアバターを更新",
                 "result_count": "結果: {count}",
                 "all": "全て",
-                "public": "パブリック",
-                "private": "プライベート",
+                "public": "Public",
+                "private": "Private",
                 "local": "ローカル",
                 "remote": "リモート",
                 "sort_name": "名前順で並び替え",
@@ -233,7 +233,7 @@
                 "mute": "ミュート",
                 "unmute": "ミュート解除",
                 "interactOn": "アバターインタラクションを許可",
-                "interactOff": "アバターインタラクションを停止",
+                "interactOff": "アバターインタラクションを禁止",
                 "muteChat": "チャットボックスを非表示",
                 "unmuteChat": "チャットボックスを表示"
             }
@@ -243,21 +243,21 @@
             "search_placeholder": "検索",
             "refresh_tooltip": "更新",
             "filters": {
-                "requestInvite": "招待リクエスト",
-                "invite": "招待",
-                "requestInviteResponse": "招待リクエストへの返信",
-                "inviteResponse": "招待への返信",
+                "requestInvite": "リクイン",
+                "invite": "インバイト",
+                "requestInviteResponse": "リクインへの返信",
+                "inviteResponse": "インバイトへの返信",
                 "friendRequest": "フレンドリクエスト",
                 "ignoredFriendRequest": "無視したフレンドリクエスト",
                 "message": "メッセージ",
                 "boop": "Boop",
-                "groupChange": "グループ変更",
+                "groupChange": "グループの変更",
                 "event": {
                     "announcement": "イベントのお知らせ"
                 },
                 "group": {
                     "announcement": "お知らせ",
-                    "informative": "インフォメーション",
+                    "informative": "情報",
                     "invite": "招待",
                     "joinRequest": "参加リクエスト",
                     "transfer": "移動",
@@ -275,10 +275,10 @@
                     }
                 },
                 "instance": {
-                    "closed": "閉じたインスタンス"
+                    "closed": "インスタンスクローズ"
                 },
                 "badge": {
-                    "earned": "獲得したバッジ"
+                    "earned": "バッジを獲得"
                 },
                 "vrcplus": {
                     "gift": "VRC+ ギフト"
@@ -463,7 +463,7 @@
                 "appearance": "外観",
                 "notifications": "通知",
                 "wrist_overlay": "手首のオーバーレイ",
-                "discord_presence": "Discordでのゲームステータス表示",
+                "discord_presence": "Discord連携",
                 "pictures": "写真",
                 "advanced": "詳細"
             },
@@ -508,7 +508,7 @@
                     "empty_avatar": "フィードにアバターを名前なしで記録"
                 },
                 "automation": {
-                    "header": "オートメーション",
+                    "header": "自動化",
                     "auto_change_status": "自動ステータス変更",
                     "auto_state_change_tooltip": "自身のいるインスタンスに他のプレイヤーがいる場合、自動的にステータスを変更します。(一人/複数人)",
                     "alone_condition": "一人の判定条件",
@@ -682,7 +682,7 @@
             },
             "discord_presence": {
                 "discord_presence": {
-                    "header": "Discordでのゲームステータス表示",
+                    "header": "Discord連携",
                     "description": "VRChatが起動しているときのみ動作します。",
                     "enable": "有効化する",
                     "enable_tooltip": "競合を防ぐため、VRChatのconfig.jsonでDiscord Rich Presenceを無効化することを推奨します。",
@@ -779,7 +779,7 @@
                         "enable_tooltip": "ユーザーの自己紹介を翻訳します"
                     },
                     "video_progress_pie": {
-                        "header": "動画のプログレスをオーバーレイ表示",
+                        "header": "動画の進捗をオーバーレイ表示",
                         "enable": "有効化する",
                         "enable_tooltip": "使用するにはSteamVRオーバーレイが必要です。",
                         "dance_world_only": "ダンスワールドのみ"
@@ -792,7 +792,7 @@
                         "website_userscript": "VRC Webサイト Userscript"
                     },
                     "screenshot_helper": {
-                        "header": "スクリーンショット ヘルパー",
+                        "header": "スクリーンショットヘルパー",
                         "description": "ゲーム内で撮影した写真のメタデータに「ワールドID」「ワールド名」「インスタンス内にいたプレイヤー」を保存します。",
                         "description_tooltip": "残念ながら、Windowsは (ごく一部を除いて) PNGテキストチャンクの表示をサポートしていません。表示するにはExifToolのようなコマンドラインツールや、PNGチャンクインスペクター、またはHEXエディタを使用してください。",
                         "enable": "有効化する",
@@ -828,11 +828,11 @@
                         "show_console": "コンソールを表示"
                     },
                     "sqlite_table_size": {
-                        "header": "SQLiteテーブル数",
+                        "header": "SQLiteテーブルサイズ",
                         "refresh": "更新",
-                        "gps": "GPS:",
+                        "gps": "現在地:",
                         "status": "ステータス:",
-                        "bio": "自己紹介:",
+                        "bio": "Bio:",
                         "avatar": "アバター:",
                         "online_offline": "オンライン/オフライン:",
                         "friend_log_history": "フレンドログ履歴:",
@@ -879,8 +879,8 @@
     },
     "side_panel": {
         "search_placeholder": "検索",
-        "search_result_active": "オフライン",
-        "search_result_offline": "アクティブ",
+        "search_result_active": "Offline",
+        "search_result_offline": "Active",
         "search_result_more": "もっと検索:",
         "direct_access_tooltip": "クリップボードのIDまたはURLから直接アクセス",
         "refresh_tooltip": "フレンドを更新",
@@ -889,20 +889,20 @@
         "me": "自分",
         "favorite": "お気に入り",
         "same_instance": "同じインスタンス",
-        "online": "オンライン",
-        "active": "アクティブ",
-        "offline": "オフライン",
-        "pending_offline": "オフライン (保留)"
+        "online": "Online",
+        "active": "Active",
+        "offline": "Offline",
+        "pending_offline": "Offline (保留)"
     },
     "dialog": {
         "user": {
             "status": {
-                "active": "アクティブ",
-                "offline": "オフライン",
-                "online": "オンライン",
-                "join_me": "だれでもおいで",
-                "ask_me": "きいてみてね",
-                "busy": "取り込み中"
+                "active": "Active",
+                "offline": "Offline",
+                "online": "Online",
+                "join_me": "Join me",
+                "ask_me": "Ask me",
+                "busy": "Busy"
             },
             "previous_display_names": "以前の表示名:",
             "pronouns": "代名詞",
@@ -924,10 +924,10 @@
                 "unfavorite_tooltip": "お気に入りから削除",
                 "refresh": "更新",
                 "share": "共有",
-                "invite": "招待を送信",
-                "invite_with_message": "メッセージ付き招待を送信",
-                "request_invite": "招待リクエストを送信",
-                "request_invite_with_message": "メッセージ付き招待リクエストを送信",
+                "invite": "インバイトを送信",
+                "invite_with_message": "メッセージ付きインバイトを送信",
+                "request_invite": "リクインを送信",
+                "request_invite_with_message": "メッセージ付きのリクインを送信",
                 "invite_to_group": "グループに招待",
                 "group_moderation": "グループの管理",
                 "send_boop": "Boopを送信",
@@ -978,7 +978,7 @@
                 "avatar_info": "アバター情報",
                 "avatar_info_last_seen": "最後に見たアバター情報",
                 "represented_group": "ネームプレートに掲示中のグループ",
-                "bio": "自己紹介",
+                "bio": "Bio",
                 "last_seen": "最後に見た日時",
                 "join_count": "Joinした回数",
                 "time_together": "一緒に居た時間",
@@ -1003,9 +1003,9 @@
                 "vrcplus_hides_avatar": "VRC+のプロフィール画像が設定されている場合、そのプレイヤーのアバター情報、フィード内のアバター変更は表示されません。",
                 "accuracy_notice": "ローカルデータベースからの情報であり、正確ではない可能性があります。",
                 "instance_full": "満員",
-                "instance_closed": "閉じられました",
+                "instance_closed": "クローズ",
                 "instance_hard_closed": "hard closed",
-                "close_instance": "インスタンスを閉じる",
+                "close_instance": "インスタンスをクローズ",
                 "instance_age_gated": "年齢制限あり",
                 "open_previous_instance": "前回のインスタンスを開く",
                 "show_mutual_friends": "共通のフレンドを表示"
@@ -1054,8 +1054,8 @@
                 "sort_by_name": "名前順",
                 "sort_by_update": "更新順",
                 "all": "全て",
-                "public": "パブリック",
-                "private": "プライベート",
+                "public": "Public",
+                "private": "Private",
                 "group_by": "グループ:"
             },
             "json": {
@@ -1072,10 +1072,10 @@
         },
         "world": {
             "tags": {
-                "public": "パブリック",
-                "private": "プライベート",
-                "avatar_scaling_disabled": "アバタースケーリング 使用不可",
-                "focus_view_disabled": "フォーカスビュー 使用不可",
+                "public": "Public",
+                "private": "Private",
+                "avatar_scaling_disabled": "アバタースケーリング使用不可",
+                "focus_view_disabled": "フォーカスビュー使用不可",
                 "stickers_disabled": "ステッカー使用不可",
                 "future_proofing": "Future Proofing",
                 "labs": "ラボ",
@@ -1084,7 +1084,7 @@
                 "content_gore": "過剰なゴア",
                 "content_violence": "写実的な暴力",
                 "content_adult": "成人向けの言葉やテーマ",
-                "content_sex": "性的なものを思わせる"
+                "content_sex": "性的"
             },
             "actions": {
                 "delete_cache_tooltip": "キャッシュからワールドを削除",
@@ -1113,8 +1113,8 @@
             },
             "instances": {
                 "header": "インスタンス",
-                "public_count": "パブリック {count}",
-                "private_count": "プライベート {count}",
+                "public_count": "Public {count}",
+                "private_count": "Private {count}",
                 "capacity_count": "最大人数 {count} ({max})",
                 "self_invite_tooltip": "自分を招待",
                 "refresh_instance_info": "インスタンス情報を更新",
@@ -1136,7 +1136,7 @@
                 "favorites": "お気に入り数",
                 "visits": "総参加回数",
                 "capacity": "最大人数",
-                "heat": "ヒート",
+                "heat": "盛り上がり",
                 "popularity": "人気度",
                 "created_at": "作成日時",
                 "last_updated": "最終更新日時",
@@ -1156,8 +1156,8 @@
         },
         "avatar": {
             "tags": {
-                "public": "パブリック",
-                "private": "プライベート",
+                "public": "Public",
+                "private": "Private",
                 "fallback": "フォールバック",
                 "impostor": "インポスター",
                 "future_proofing": "Future Proofing",
@@ -1166,11 +1166,11 @@
                 "content_gore": "過剰なゴア",
                 "content_violence": "写実的な暴力",
                 "content_adult": "成人向けの言葉やテーマ",
-                "content_sex": "性的なものを思わせる"
+                "content_sex": "性的"
             },
             "labels": {
-                "public": "(パブリック)",
-                "private": "(プライベート)",
+                "public": "(Public)",
+                "private": "(Private)",
                 "own": "(自分)"
             },
             "actions": {
@@ -1183,7 +1183,7 @@
                 "select_fallback": "フォールバックアバターを使用",
                 "block": "アバターをブロック",
                 "unblock": "アバターをブロック解除",
-                "make_public": "アバターを公開化",
+                "make_public": "アバターをパブリック化",
                 "make_private": "アバターを非公開化",
                 "rename": "名前を変更",
                 "change_description": "説明を変更",
@@ -1220,8 +1220,8 @@
         "group": {
             "tags": {
                 "verified": "認証済み",
-                "public": "公開",
-                "private": "非公開",
+                "public": "Public",
+                "private": "Private",
                 "open": "自由参加可能",
                 "request": "リクエスト制",
                 "invite": "招待制",
@@ -1235,7 +1235,7 @@
             },
             "actions": {
                 "represent_tooltip": "ネームプレートに掲示",
-                "unrepresent_tooltip": "ネームプレートの掲示をやめる",
+                "unrepresent_tooltip": "ネームプレートへの掲示をやめる",
                 "cancel_join_request_tooltip": "参加リクエストをキャンセル",
                 "pending_request_tooltip": "保留中の招待",
                 "request_join_tooltip": "参加リクエストを送信",
@@ -1310,7 +1310,7 @@
                 },
                 "unsubscribed_announcements": "お知らせ受信停止中",
                 "visibility": "表示範囲:",
-                "representing": "ネームプレート表示中",
+                "representing": "ネームプレートに表示中",
                 "manager_notes": "管理用メモ:",
                 "search": "検索"
             },
@@ -1328,13 +1328,13 @@
             "local_avatar_favorites": "ローカルのお気に入り (VRC+が必要)"
         },
         "invite": {
-            "header": "招待",
+            "header": "インバイト",
             "select_placeholder": "フレンドを選択",
             "add_self": "自分を追加",
             "add_friends_in_instance": "インスタンス内のフレンドを追加",
             "add_favorite_friends": "お気に入りのフレンドを追加",
-            "invite_with_message": "メッセージ付きで招待を送信",
-            "invite": "招待を送信",
+            "invite_with_message": "メッセージ付きでインバイトを送信",
+            "invite": "インバイトを送信",
             "friends_in_instance": "インスタンス内のフレンド"
         },
         "social_status": {
@@ -1364,17 +1364,17 @@
         "new_instance": {
             "header": "新しいインスタンス",
             "access_type": "アクセスタイプ",
-            "access_type_public": "パブリック",
-            "access_type_group": "グループ",
-            "access_type_friend_plus": "フレンド+",
-            "access_type_friend": "フレンド",
-            "access_type_invite_plus": "インバイト+",
-            "access_type_invite": "インバイト",
+            "access_type_public": "Public",
+            "access_type_group": "Group",
+            "access_type_friend_plus": "Friends+",
+            "access_type_friend": "Friends",
+            "access_type_invite_plus": "Invite+",
+            "access_type_invite": "Invite",
             "group_access_type": "グループアクセス",
             "group_access_type_members": "メンバー",
             "group_access_type_plus": "プラス",
-            "group_access_type_public": "パブリック",
-            "region": "地域",
+            "group_access_type_public": "Public",
+            "region": "リージョン",
             "region_usw": "アメリカ(西)",
             "region_use": "アメリカ(東)",
             "region_eu": "ヨーロッパ",
@@ -1400,7 +1400,7 @@
             "url": "URL",
             "copy_url": "URLをコピー",
             "self_invite": "自分を招待",
-            "invite": "招待",
+            "invite": "インバイト",
             "launch": "起動",
             "create_instance": "インスタンスを作成",
             "queueEnabled": "キュー",
@@ -1487,7 +1487,7 @@
             "content_gore": "過剰なゴア",
             "content_violence": "写実的な暴力",
             "content_adult": "成人向けの言葉やテーマ",
-            "content_sex": "性的なものを思わせる",
+            "content_sex": "性的",
             "default_content_settings": "デフォルトコンテンツ設定",
             "cancel": "キャンセル",
             "save": "保存"
@@ -1499,7 +1499,7 @@
             "content_gore": "過剰なゴア",
             "content_violence": "写実的な暴力",
             "content_adult": "成人向けの言葉やテーマ",
-            "content_sex": "性的なものを思わせる",
+            "content_sex": "性的",
             "custom_tags_placeholder": "カスタムタグ",
             "select_all": "全て選択",
             "select_none": "選択解除",
@@ -1532,7 +1532,7 @@
             "location": "場所",
             "copy_tooltip": "クリップボードにコピー",
             "start_as_desktop": "起動 (デスクトップモード)",
-            "invite": "招待",
+            "invite": "インバイト",
             "launch": "起動 (VRモード)",
             "open_ingame": "ゲーム内で開く",
             "self_invite": "自分を招待",
@@ -1654,20 +1654,20 @@
             "clear_errors": "エラーを消去"
         },
         "edit_invite_message": {
-            "header": "招待メッセージを編集",
+            "header": "インバイトメッセージを編集",
             "description": "編集後は1時間クールダウンが必要です。",
             "cancel": "キャンセル",
             "save": "保存"
         },
         "edit_invite_messages": {
-            "header": "招待メッセージを編集",
-            "invite_message_tab": "招待",
-            "invite_request_tab": "招待リクエスト",
-            "invite_request_response_tab": "招待リクエストへの返信",
-            "invite_response_tab": "招待への返信"
+            "header": "インバイトメッセージを編集",
+            "invite_message_tab": "インバイト",
+            "invite_request_tab": "リクイン",
+            "invite_request_response_tab": "リクインへの返信",
+            "invite_response_tab": "インバイトへの返信"
         },
         "invite_message": {
-            "header": "メッセージ付き招待を送信",
+            "header": "メッセージ付きインバイトを送信",
             "confirmation": "本当に送信しますか？",
             "select_image": "画像を選択",
             "clear_selected_image": "選択した画像をクリア",
@@ -1676,30 +1676,30 @@
             "confirm": "確定"
         },
         "invite_request_message": {
-            "header": "メッセージ付き招待リクエストを送信",
+            "header": "メッセージ付きリクインを送信",
             "cancel": "キャンセル",
             "refresh": "更新"
         },
         "invite_response_message": {
-            "header": "招待に返信",
+            "header": "インバイトに返信",
             "confirmation": "本当に送信しますか？",
             "cancel": "キャンセル",
             "refresh": "更新",
             "confirm": "確定"
         },
         "invite_request_response_message": {
-            "header": "招待リクエストに返信",
+            "header": "リクインに返信",
             "cancel": "キャンセル",
             "refresh": "更新"
         },
         "edit_send_invite_message": {
-            "header": "招待メッセージを編集して送信",
+            "header": "インバイトメッセージを編集して送信",
             "description": "編集後は1時間クールダウンが必要です。",
             "cancel": "キャンセル",
             "send": "送信"
         },
         "edit_send_invite_response_message": {
-            "header": "招待への返信メッセージを編集して送信",
+            "header": "インバイトへの返信メッセージを編集して送信",
             "description": "編集後は1時間クールダウンが必要です。",
             "cancel": "キャンセル",
             "send": "送信"
