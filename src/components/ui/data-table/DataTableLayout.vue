@@ -40,7 +40,7 @@
                                         :key="cell.id"
                                         :class="getCellClass(cell)"
                                         :style="getPinnedStyle(cell.column)">
-                                        <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
+                                        <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" :class="getRowCellClass(row, cell.column.id)"/>
                                     </TableCell>
                                 </TableRow>
                                 <TableRow v-if="row.getIsExpanded() && (expandedRenderer || $slots.expanded)">
@@ -312,4 +312,22 @@
         if (!props.onRowClick) return;
         props.onRowClick(row);
     };
+
+    const getRowCellClass = (row, cell_id) => {
+        switch(cell_id){
+            case "type":
+                if(!row.original.type) return '';
+                return `table-type-cell type-${row.original.type.toLowerCase()}`
+                break;
+            case "detail":
+                if(!row.original.location) return '';
+                let location = row.original.location;
+                if(location === 'private') return 'table-detail-cell location-private'
+                if(location === 'offline') return 'table-detail-cell location-offline'
+                if(location === 'traveling') return 'table-detail-cell location-traveling'
+                break;
+        }
+
+        return '';
+    }
 </script>
