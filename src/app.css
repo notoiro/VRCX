@@ -1500,10 +1500,10 @@ i.x-status-icon.red {
   color: #ea52d6;
 }
 
-.table-type-cell.type-location > div{
+
+.table-type-cell.type-location > span{
   color: #41c6c6;
 }
-
 
 .table-type-cell.type-onplayerjoined > span{
   color: #5dc65d;
