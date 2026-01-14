@@ -1475,71 +1475,72 @@ i.x-status-icon.red {
     padding: 5px;
 }
 
-/* NOTE: 本当はもうちょっと最近のCSSっぽい書き方するべきなんだろうけどなんかここらへん変更ありそうなので変更来た頃に直す */
 
-span.color_online{
-  color: #5dc65d !important;
+.table-type-cell.type-online > div{
+  color: #5dc65d;
 }
 
-span.color_offline{
-  color: #e85a33 !important;
+.table-type-cell.type-offline > div{
+  color: #e85a33;
 }
 
-span.color_gps{
-  color: #41c6c6 !important;
+.table-type-cell.type-gps > div{
+  color: #41c6c6;
 }
 
-span.color_status{
-  color: #eacc52 !important;
+.table-type-cell.type-status > div{
+  color: #eacc52;
 }
 
-span.color_bio{
-  color: #bc52ea !important;
+.table-type-cell.type-bio> div{
+  color: #bc52ea;
 }
 
-span.color_avatar{
-  color: #ea52d6 !important;
+.table-type-cell.type-avatar > div{
+  color: #ea52d6;
 }
 
-span.color_location{
-  color: #41c6c6 !important;
-}
-
-span.color_onplayerjoined{
-  color: #5dc65d !important;
-}
-
-span.color_onplayerleft{
-  color: #e85a33 !important;
-}
-
-span.color_videoplay{
-  color: #ea52d6 !important;
-}
-
-span.color_event{
-  color: #bc52ea !important;
-}
-
-span.color_external{
-  color: #bc52ea !important;
-}
-
-span.color_stringload{
-  color: #bc52ea !important;
-}
-
-span.color_imageload{
-  color: #bc52ea !important;
-}
-
-div.no-location{
-  color: #744047 !important;
+.table-type-cell.type-location > div{
+  color: #41c6c6;
 }
 
 
-tbody span.el-tag.el-tag--info{
-  background-color: unset;
-  color: unset;
-  border: unset;
+.table-type-cell.type-onplayerjoined > div{
+  color: #5dc65d;
+}
+
+.table-type-cell.type-onplayerleft > div{
+  color: #e85a33;
+}
+
+.table-type-cell.type-videoplay > div{
+  color: #ea52d6;
+}
+
+.table-type-cell.type-event > div{
+  color: #bc52ea;
+}
+
+.table-type-cell.type-external > div{
+  color: #bc52ea;
+}
+
+.table-type-cell.type-stringload > div{
+  color: #bc52ea;
+}
+.table-type-cell.type-imageload > div{
+  color: #bc52ea;
+}
+
+
+.table-detail-cell.location-private > div{
+  color: #9e9e9e;
+}
+
+.table-detail-cell.location-offline > div{
+  color: #9e9e9e;
+}
+
+.table-detail-cell.location-travering > div{
+  color: #9e9e9e;
 }
