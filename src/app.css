@@ -1505,30 +1505,31 @@ i.x-status-icon.red {
 }
 
 
-.table-type-cell.type-onplayerjoined > div{
+.table-type-cell.type-onplayerjoined > span{
   color: #5dc65d;
 }
 
-.table-type-cell.type-onplayerleft > div{
+.table-type-cell.type-onplayerleft > span{
   color: #e85a33;
 }
 
-.table-type-cell.type-videoplay > div{
+.table-type-cell.type-videoplay > span{
   color: #ea52d6;
 }
 
-.table-type-cell.type-event > div{
+.table-type-cell.type-event > span{
   color: #bc52ea;
 }
 
-.table-type-cell.type-external > div{
+.table-type-cell.type-external > span{
   color: #bc52ea;
 }
 
-.table-type-cell.type-stringload > div{
+.table-type-cell.type-stringload > span{
   color: #bc52ea;
 }
-.table-type-cell.type-imageload > div{
+
+.table-type-cell.type-imageload > span{
   color: #bc52ea;
 }
 
