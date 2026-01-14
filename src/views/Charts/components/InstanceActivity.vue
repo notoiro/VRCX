@@ -3,88 +3,105 @@
         <div class="options-container instance-activity" style="margin-top: 0">
             <div>
                 <span>{{ t('view.charts.instance_activity.header') }}</span>
-                <el-popover placement="bottom-start" trigger="hover" :width="300">
-                    <div class="tips-popover">
-                        <div>{{ t('view.charts.instance_activity.tips.online_time') }}</div>
-                        <div>{{ t('view.charts.instance_activity.tips.click_Y_axis') }}</div>
-                        <div>{{ t('view.charts.instance_activity.tips.click_instance_name') }}</div>
-                        <div>
-                            <el-icon><WarningFilled /></el-icon
-                            ><i>{{ t('view.charts.instance_activity.tips.accuracy_notice') }}</i>
-                        </div>
-                    </div>
-
-                    <template #reference>
+                <HoverCard>
+                    <HoverCardTrigger as-child>
                         <el-icon style="margin-left: 5px; font-size: 12px; opacity: 0.7"><InfoFilled /></el-icon>
-                    </template>
-                </el-popover>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="bottom" align="start" class="w-[300px]">
+                        <div class="tips-popover">
+                            <div>{{ t('view.charts.instance_activity.tips.online_time') }}</div>
+                            <div>{{ t('view.charts.instance_activity.tips.click_Y_axis') }}</div>
+                            <div>{{ t('view.charts.instance_activity.tips.click_instance_name') }}</div>
+                            <div>
+                                <el-icon><WarningFilled /></el-icon
+                                ><i>{{ t('view.charts.instance_activity.tips.accuracy_notice') }}</i>
+                            </div>
+                        </div>
+                    </HoverCardContent>
+                </HoverCard>
             </div>
 
             <div>
-                <el-tooltip :content="t('view.charts.instance_activity.refresh')" placement="top"
-                    ><el-button :icon="Refresh" circle style="margin-right: 5px" @click="reloadData"></el-button
-                ></el-tooltip>
+                <TooltipWrapper :content="t('view.charts.instance_activity.refresh')" side="top">
+                    <Button
+                        class="rounded-full"
+                        size="icon"
+                        variant="outline"
+                        style="margin-right: 5px"
+                        @click="reloadData">
+                        <RefreshCcw />
+                    </Button>
+                </TooltipWrapper>
 
-                <el-popover placement="bottom" trigger="click" :width="250">
-                    <div class="settings">
+                <Popover>
+                    <PopoverTrigger asChild>
                         <div>
-                            <span>{{ t('view.charts.instance_activity.settings.bar_width') }}</span>
+                            <TooltipWrapper :content="t('view.charts.instance_activity.settings.header')" side="top">
+                                <Button class="rounded-full" size="icon" variant="outline" style="margin-right: 5px">
+                                    <Settings />
+                                </Button>
+                            </TooltipWrapper>
+                        </div>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" class="w-62.5">
+                        <div class="settings">
                             <div>
-                                <el-slider
-                                    v-model.lazy="barWidth"
-                                    :max="50"
-                                    :min="1"
-                                    @change="
-                                        (value) => changeBarWidth(value, () => handleEchartsRerender())
-                                    "></el-slider>
+                                <span>{{ t('view.charts.instance_activity.settings.bar_width') }}</span>
+                                <div>
+                                    <Slider
+                                        v-model="barWidthDraftValue"
+                                        :max="50"
+                                        :min="1"
+                                        @valueCommit="handleBarWidthCommit"></Slider>
+                                </div>
+                            </div>
+                            <div>
+                                <span>{{ t('view.charts.instance_activity.settings.show_detail') }}</span>
+                                <Switch
+                                    v-model="isDetailVisible"
+                                    @update:modelValue="
+                                        (value) => changeIsDetailInstanceVisible(value, () => handleSettingsChange())
+                                    " />
+                            </div>
+                            <div v-if="isDetailVisible">
+                                <span>{{ t('view.charts.instance_activity.settings.show_solo_instance') }}</span>
+                                <Switch
+                                    v-model="isSoloInstanceVisible"
+                                    @update:modelValue="
+                                        (value) => changeIsSoloInstanceVisible(value, () => handleSettingsChange())
+                                    " />
+                            </div>
+                            <div v-if="isDetailVisible">
+                                <span>{{ t('view.charts.instance_activity.settings.show_no_friend_instance') }}</span>
+                                <Switch
+                                    v-model="isNoFriendInstanceVisible"
+                                    @update:modelValue="
+                                        (value) => changeIsNoFriendInstanceVisible(value, () => handleSettingsChange())
+                                    " />
                             </div>
                         </div>
-                        <div>
-                            <span>{{ t('view.charts.instance_activity.settings.show_detail') }}</span>
-                            <el-switch
-                                v-model="isDetailVisible"
-                                @change="(value) => changeIsDetailInstanceVisible(value, () => handleSettingsChange())">
-                            </el-switch>
-                        </div>
-                        <div v-if="isDetailVisible">
-                            <span>{{ t('view.charts.instance_activity.settings.show_solo_instance') }}</span>
-                            <el-switch
-                                v-model="isSoloInstanceVisible"
-                                @change="(value) => changeIsSoloInstanceVisible(value, () => handleSettingsChange())">
-                            </el-switch>
-                        </div>
-                        <div v-if="isDetailVisible">
-                            <span>{{ t('view.charts.instance_activity.settings.show_no_friend_instance') }}</span>
-                            <el-switch
-                                v-model="isNoFriendInstanceVisible"
-                                @change="
-                                    (value) => changeIsNoFriendInstanceVisible(value, () => handleSettingsChange())
-                                ">
-                            </el-switch>
-                        </div>
-                    </div>
-
-                    <template #reference>
-                        <div>
-                            <el-tooltip :content="t('view.charts.instance_activity.settings.header')" placement="top">
-                                <el-button :icon="Setting" style="margin-right: 5px" circle></el-button>
-                            </el-tooltip>
-                        </div>
-                    </template>
-                </el-popover>
-                <el-button-group style="margin-right: 5px">
-                    <el-tooltip :content="t('view.charts.instance_activity.previous_day')" placement="top">
-                        <el-button
-                            :icon="ArrowLeft"
+                    </PopoverContent>
+                </Popover>
+                <ButtonGroup style="margin-right: 5px">
+                    <TooltipWrapper :content="t('view.charts.instance_activity.previous_day')" side="top">
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
                             :disabled="isPrevDayBtnDisabled"
-                            @click="changeSelectedDateFromBtn(false)"></el-button>
-                    </el-tooltip>
-                    <el-tooltip :content="t('view.charts.instance_activity.next_day')" placement="top">
-                        <el-button :disabled="isNextDayBtnDisabled" @click="changeSelectedDateFromBtn(true)"
-                            ><el-icon class="el-icon--right"><ArrowRight /></el-icon
-                        ></el-button>
-                    </el-tooltip>
-                </el-button-group>
+                            @click="changeSelectedDateFromBtn(false)">
+                            <ArrowLeft />
+                        </Button>
+                    </TooltipWrapper>
+                    <TooltipWrapper :content="t('view.charts.instance_activity.next_day')" side="top">
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
+                            :disabled="isNextDayBtnDisabled"
+                            @click="changeSelectedDateFromBtn(true)">
+                            <ArrowRight />
+                        </Button>
+                    </TooltipWrapper>
+                </ButtonGroup>
                 <el-date-picker
                     v-model="selectedDate"
                     type="date"
@@ -95,11 +112,14 @@
             </div>
         </div>
         <div class="status-online">
-            <el-statistic
-                :title="t('view.charts.instance_activity.online_time')"
-                :formatter="(val) => timeToText(val, true)"
-                :value="totalOnlineTime">
-            </el-statistic>
+            <div class="text-center">
+                <div class="text-sm text-muted-foreground">
+                    {{ t('view.charts.instance_activity.online_time') }}
+                </div>
+                <div class="text-2xl font-semibold">
+                    {{ timeToText(totalOnlineTime, true) }}
+                </div>
+            </div>
         </div>
 
         <div ref="activityChartRef" style="width: 100%"></div>
@@ -124,15 +144,22 @@
 </template>
 
 <script setup>
-    import { nextTick, onActivated, onBeforeMount, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
-    import { ArrowLeft, ArrowRight, InfoFilled, Refresh, Setting, WarningFilled } from '@element-plus/icons-vue';
+    import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { ArrowLeft, ArrowRight, InfoFilled, WarningFilled } from '@element-plus/icons-vue';
+    import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+    import { RefreshCcw, Settings } from 'lucide-vue-next';
+    import { Button } from '@/components/ui/button';
+    import { ButtonGroup } from '@/components/ui/button-group';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
     import dayjs from 'dayjs';
 
+    import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover';
     import { useAppearanceSettingsStore, useFriendStore, useUserStore } from '../../../stores';
     import { parseLocation, timeToText } from '../../../shared/utils';
+    import { Slider } from '../../../components/ui/slider';
+    import { Switch } from '../../../components/ui/switch';
     import { useActivityDataProcessor } from '../composables/useActivityDataProcessor';
     import { useChartHelpers } from '../composables/useChartHelpers';
     import { useDateNavigation } from '../composables/useDateNavigation';
@@ -190,6 +217,27 @@
         changeIsNoFriendInstanceVisible,
         handleChangeSettings
     } = useInstanceActivitySettings();
+    const barWidthDraft = ref(barWidth.value);
+    const barWidthDraftValue = computed({
+        get: () => [barWidthDraft.value],
+        set: (value) => {
+            const next = value?.[0];
+            if (typeof next === 'number') {
+                barWidthDraft.value = next;
+            }
+        }
+    });
+
+    function handleBarWidthCommit(value) {
+        changeBarWidth(value?.[0] ?? barWidthDraft.value, () => handleEchartsRerender());
+    }
+
+    watch(
+        () => barWidth.value,
+        (value) => {
+            barWidthDraft.value = value;
+        }
+    );
 
     const {
         activityData,
@@ -670,9 +718,6 @@
     .status-online {
         display: flex;
         justify-content: center;
-        :deep(.el-statistic__head) {
-            display: flex;
-            justify-content: center;
-        }
+        text-align: center;
     }
 </style>

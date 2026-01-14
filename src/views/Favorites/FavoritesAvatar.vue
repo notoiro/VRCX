@@ -2,78 +2,104 @@
     <div class="favorites-page x-container" v-loading="isFavoriteLoading">
         <div class="favorites-toolbar">
             <div>
-                <el-select v-model="sortFav" class="favorites-toolbar__select">
-                    <template #prefix>
-                        <i class="ri-sort-asc"></i>
-                    </template>
-                    <el-option :label="t('view.settings.appearance.appearance.sort_favorite_by_name')" :value="false" />
-                    <el-option :label="t('view.settings.appearance.appearance.sort_favorite_by_date')" :value="true" />
-                </el-select>
+                <Select :model-value="sortFavorites" @update:modelValue="handleSortFavoritesChange">
+                    <SelectTrigger size="sm" class="favorites-toolbar__select">
+                        <span class="flex items-center gap-2">
+                            <i class="ri-sort-asc"></i>
+                            <SelectValue
+                                :placeholder="t('view.settings.appearance.appearance.sort_favorite_by_name')" />
+                        </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            <SelectItem
+                                :value="false"
+                                :text-value="t('view.settings.appearance.appearance.sort_favorite_by_name')">
+                                {{ t('view.settings.appearance.appearance.sort_favorite_by_name') }}
+                            </SelectItem>
+                            <SelectItem
+                                :value="true"
+                                :text-value="t('view.settings.appearance.appearance.sort_favorite_by_date')">
+                                {{ t('view.settings.appearance.appearance.sort_favorite_by_date') }}
+                            </SelectItem>
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
             </div>
             <div class="favorites-toolbar__right">
-                <el-input
+                <InputGroupSearch
                     v-model="avatarFavoriteSearch"
-                    clearable
                     class="favorites-toolbar__search"
                     :placeholder="t('view.favorite.avatars.search')"
                     @input="searchAvatarFavorites" />
-                <el-dropdown ref="avatarToolbarMenuRef" trigger="click" :hide-on-click="false">
-                    <el-button :icon="MoreFilled" size="small" circle />
-                    <template #dropdown>
-                        <el-dropdown-menu class="favorites-dropdown">
-                            <li class="favorites-dropdown__control" @click.stop>
-                                <div class="favorites-dropdown__control-header">
-                                    <span>Scale</span>
-                                    <span class="favorites-dropdown__control-value">{{ avatarCardScalePercent }}%</span>
-                                </div>
-                                <el-slider
-                                    v-model="avatarCardScale"
-                                    class="favorites-dropdown__slider"
-                                    :min="avatarCardScaleSlider.min"
-                                    :max="avatarCardScaleSlider.max"
-                                    :step="avatarCardScaleSlider.step"
-                                    :show-tooltip="false" />
-                            </li>
-                            <li class="favorites-dropdown__control" @click.stop>
-                                <div class="favorites-dropdown__control-header">
-                                    <span>Spacing</span>
-                                    <span class="favorites-dropdown__control-value">
-                                        {{ avatarCardSpacingPercent }}%
-                                    </span>
-                                </div>
-                                <el-slider
-                                    v-model="avatarCardSpacing"
-                                    class="favorites-dropdown__slider"
-                                    :min="avatarCardSpacingSlider.min"
-                                    :max="avatarCardSpacingSlider.max"
-                                    :step="avatarCardSpacingSlider.step"
-                                    :show-tooltip="false" />
-                            </li>
-                            <el-dropdown-item @click="handleAvatarImportClick">
-                                {{ t('view.favorite.import') }}
-                            </el-dropdown-item>
-                            <el-dropdown-item divided @click="handleAvatarExportClick">
-                                {{ t('view.favorite.export') }}
-                            </el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
+                <DropdownMenu v-model:open="avatarToolbarMenuOpen">
+                    <DropdownMenuTrigger as-child>
+                        <Button class="rounded-full" size="icon-sm" variant="ghost"> <Ellipsis /> </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent class="favorites-dropdown">
+                        <li class="favorites-dropdown__control" @click.stop>
+                            <div class="favorites-dropdown__control-header">
+                                <span>Scale</span>
+                                <span class="favorites-dropdown__control-value">{{ avatarCardScalePercent }}%</span>
+                            </div>
+                            <Slider
+                                v-model="avatarCardScaleValue"
+                                class="favorites-dropdown__slider"
+                                :min="avatarCardScaleSlider.min"
+                                :max="avatarCardScaleSlider.max"
+                                :step="avatarCardScaleSlider.step" />
+                        </li>
+                        <li class="favorites-dropdown__control" @click.stop>
+                            <div class="favorites-dropdown__control-header">
+                                <span>Spacing</span>
+                                <span class="favorites-dropdown__control-value"> {{ avatarCardSpacingPercent }}% </span>
+                            </div>
+                            <Slider
+                                v-model="avatarCardSpacingValue"
+                                class="favorites-dropdown__slider"
+                                :min="avatarCardSpacingSlider.min"
+                                :max="avatarCardSpacingSlider.max"
+                                :step="avatarCardSpacingSlider.step" />
+                        </li>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem @click="handleAvatarImportClick">
+                            {{ t('view.favorite.import') }}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem @click="handleAvatarExportClick">
+                            {{ t('view.favorite.export') }}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </div>
-        <el-splitter class="favorites-splitter" @resize-end="handleAvatarSplitterResize">
-            <el-splitter-panel :size="avatarSplitterSize" :min="0" :max="360" collapsible>
+        <ResizablePanelGroup
+            ref="avatarSplitterGroupRef"
+            direction="horizontal"
+            class="favorites-splitter"
+            @layout="handleAvatarSplitterLayout">
+            <ResizablePanel
+                ref="avatarSplitterPanelRef"
+                :default-size="avatarSplitterDefaultSize"
+                :min-size="avatarSplitterMinSize"
+                :max-size="avatarSplitterMaxSize"
+                :collapsed-size="0"
+                collapsible
+                :order="1">
                 <div class="favorites-groups-panel">
                     <div class="group-section">
                         <div class="group-section__header">
                             <span>{{ t('view.favorite.avatars.vrchat_favorites') }}</span>
-                            <el-tooltip placement="bottom" :content="t('view.favorite.refresh_favorites_tooltip')">
-                                <el-button
-                                    :loading="isFavoriteLoading"
-                                    size="small"
-                                    :icon="Refresh"
-                                    circle
-                                    @click.stop="handleRefreshFavorites" />
-                            </el-tooltip>
+                            <TooltipWrapper side="bottom" :content="t('view.favorite.refresh_favorites_tooltip')">
+                                <Button
+                                    class="rounded-full"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    :disabled="isFavoriteLoading"
+                                    @click.stop="handleRefreshFavorites">
+                                    <Spinner v-if="isFavoriteLoading" />
+                                    <Refresh v-else />
+                                </Button>
+                            </TooltipWrapper>
                         </div>
                         <div class="group-section__list">
                             <template v-if="favoriteAvatarGroups.length">
@@ -90,77 +116,68 @@
                                         <span class="group-item__count">{{ group.count }}/{{ group.capacity }}</span>
                                     </div>
                                     <div class="group-item__bottom">
-                                        <el-tag
-                                            size="small"
-                                            effect="plain"
-                                            :type="userFavoriteAvatarsStatusForFavTab(group.visibility)">
+                                        <Badge variant="outline">
                                             {{ formatVisibility(group.visibility) }}
-                                        </el-tag>
-                                        <el-popover
-                                            :visible="activeGroupMenu === remoteGroupMenuKey(group.key)"
-                                            @update:visible="
+                                        </Badge>
+                                        <Popover
+                                            :open="activeGroupMenu === remoteGroupMenuKey(group.key)"
+                                            @update:open="
                                                 handleGroupMenuVisible(remoteGroupMenuKey(group.key), $event)
-                                            "
-                                            placement="right"
-                                            trigger="click"
-                                            :hide-after="0"
-                                            :width="220"
-                                            popper-style="padding: 4px; border-radius: 8px;">
-                                            <template #reference>
-                                                <el-button
-                                                    text
-                                                    size="small"
-                                                    :icon="MoreFilled"
-                                                    circle
-                                                    @click.stop></el-button>
-                                            </template>
-                                            <div class="favorites-group-menu">
-                                                <button
-                                                    type="button"
-                                                    class="favorites-group-menu__item"
-                                                    @click="handleRemoteRename(group)">
-                                                    <span>{{ t('view.favorite.rename_tooltip') }}</span>
-                                                </button>
-                                                <el-popover
-                                                    placement="right"
-                                                    trigger="hover"
-                                                    :width="180"
-                                                    popper-style="padding: 4px; border-radius: 8px;">
-                                                    <div class="group-visibility-menu">
-                                                        <button
-                                                            v-for="visibility in avatarGroupVisibilityOptions"
-                                                            :key="visibility"
-                                                            type="button"
-                                                            :class="[
-                                                                'group-visibility-menu__item',
-                                                                { 'is-active': group.visibility === visibility }
-                                                            ]"
-                                                            @click="handleVisibilitySelection(group, visibility)">
-                                                            <span>{{ formatVisibility(visibility) }}</span>
-                                                            <span
-                                                                v-if="group.visibility === visibility"
-                                                                class="group-visibility-menu__check">
-                                                                <i class="ri-check-line"></i>
-                                                            </span>
-                                                        </button>
-                                                    </div>
-                                                    <template #reference>
-                                                        <button
-                                                            type="button"
-                                                            class="favorites-group-menu__item favorites-group-menu__item--submenu">
-                                                            <span>{{ t('view.favorite.visibility_tooltip') }}</span>
-                                                            <span class="favorites-group-menu__arrow">›</span>
-                                                        </button>
-                                                    </template>
-                                                </el-popover>
-                                                <button
-                                                    type="button"
-                                                    class="favorites-group-menu__item favorites-group-menu__item--danger"
-                                                    @click="handleRemoteClear(group)">
-                                                    <span>{{ t('view.favorite.clear') }}</span>
-                                                </button>
-                                            </div>
-                                        </el-popover>
+                                            ">
+                                            <PopoverTrigger asChild>
+                                                <Button class="rounded-full" variant="ghost" size="icon-sm" @click.stop>
+                                                    <MoreFilled />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent side="right" class="w-55 p-1 rounded-lg">
+                                                <div class="favorites-group-menu">
+                                                    <button
+                                                        type="button"
+                                                        class="favorites-group-menu__item"
+                                                        @click="handleRemoteRename(group)">
+                                                        <span>{{ t('view.favorite.rename_tooltip') }}</span>
+                                                    </button>
+                                                    <el-popover
+                                                        placement="right"
+                                                        trigger="hover"
+                                                        :width="180"
+                                                        popper-style="padding: 4px; border-radius: 8px;">
+                                                        <div class="group-visibility-menu">
+                                                            <button
+                                                                v-for="visibility in avatarGroupVisibilityOptions"
+                                                                :key="visibility"
+                                                                type="button"
+                                                                :class="[
+                                                                    'group-visibility-menu__item',
+                                                                    { 'is-active': group.visibility === visibility }
+                                                                ]"
+                                                                @click="handleVisibilitySelection(group, visibility)">
+                                                                <span>{{ formatVisibility(visibility) }}</span>
+                                                                <span
+                                                                    v-if="group.visibility === visibility"
+                                                                    class="group-visibility-menu__check">
+                                                                    <i class="ri-check-line"></i>
+                                                                </span>
+                                                            </button>
+                                                        </div>
+                                                        <template #reference>
+                                                            <button
+                                                                type="button"
+                                                                class="favorites-group-menu__item favorites-group-menu__item--submenu">
+                                                                <span>{{ t('view.favorite.visibility_tooltip') }}</span>
+                                                                <span class="favorites-group-menu__arrow">›</span>
+                                                            </button>
+                                                        </template>
+                                                    </el-popover>
+                                                    <button
+                                                        type="button"
+                                                        class="favorites-group-menu__item favorites-group-menu__item--danger"
+                                                        @click="handleRemoteClear(group)">
+                                                        <span>{{ t('view.favorite.clear') }}</span>
+                                                    </button>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
                                 </div>
                             </template>
@@ -188,16 +205,19 @@
                         <div class="group-section__header">
                             <span>{{ t('view.favorite.avatars.local_favorites') }}</span>
                             <template v-if="!refreshingLocalFavorites">
-                                <el-button
-                                    size="small"
-                                    :icon="Refresh"
-                                    circle
-                                    @click.stop="refreshLocalAvatarFavorites" />
+                                <Button
+                                    class="rounded-full"
+                                    size="icon"
+                                    variant="outline"
+                                    @click.stop="refreshLocalAvatarFavorites"
+                                    ><RefreshCcw
+                                /></Button>
                             </template>
-                            <el-button v-else size="small" text @click.stop="cancelLocalAvatarRefresh">
-                                <el-icon class="is-loading"><Loading /></el-icon>
+                            <Button size="sm" variant="ghost" v-else @click.stop="cancelLocalAvatarRefresh">
+                                <Loader />
+
                                 {{ t('view.favorite.avatars.cancel_refresh') }}
-                            </el-button>
+                            </Button>
                         </div>
                         <div class="group-section__list">
                             <template v-if="localAvatarFavoriteGroups.length">
@@ -215,51 +235,47 @@
                                             <span class="group-item__count">{{
                                                 localAvatarFavGroupLength(group)
                                             }}</span>
-                                            <el-popover
-                                                :visible="activeGroupMenu === localGroupMenuKey(group)"
-                                                @update:visible="
-                                                    handleGroupMenuVisible(localGroupMenuKey(group), $event)
-                                                "
-                                                placement="right"
-                                                trigger="click"
-                                                :hide-after="0"
-                                                :width="200"
-                                                popper-style="padding: 4px; border-radius: 8px;">
-                                                <template #reference>
-                                                    <el-button
-                                                        text
-                                                        size="small"
-                                                        :icon="MoreFilled"
-                                                        circle
-                                                        @click.stop></el-button>
-                                                </template>
-                                                <div class="favorites-group-menu">
-                                                    <button
-                                                        type="button"
-                                                        class="favorites-group-menu__item"
-                                                        @click="handleLocalRename(group)">
-                                                        <span>{{ t('view.favorite.rename_tooltip') }}</span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        class="favorites-group-menu__item"
-                                                        @click="handleCheckInvalidAvatars(group)">
-                                                        <span>{{ t('view.favorite.avatars.check_invalid') }}</span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        class="favorites-group-menu__item favorites-group-menu__item--danger"
-                                                        @click="handleLocalDelete(group)">
-                                                        <span>{{ t('view.favorite.delete_tooltip') }}</span>
-                                                    </button>
-                                                </div>
-                                            </el-popover>
+                                            <Popover
+                                                :open="activeGroupMenu === localGroupMenuKey(group)"
+                                                @update:open="handleGroupMenuVisible(localGroupMenuKey(group), $event)">
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        class="rounded-full"
+                                                        size="icon-sm"
+                                                        variant="ghost"
+                                                        @click.stop
+                                                        ><Ellipsis
+                                                    /></Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent side="right" class="w-50 p-1 rounded-lg">
+                                                    <div class="favorites-group-menu">
+                                                        <button
+                                                            type="button"
+                                                            class="favorites-group-menu__item"
+                                                            @click="handleLocalRename(group)">
+                                                            <span>{{ t('view.favorite.rename_tooltip') }}</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            class="favorites-group-menu__item"
+                                                            @click="handleCheckInvalidAvatars(group)">
+                                                            <span>{{ t('view.favorite.avatars.check_invalid') }}</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            class="favorites-group-menu__item favorites-group-menu__item--danger"
+                                                            @click="handleLocalDelete(group)">
+                                                            <span>{{ t('view.favorite.delete_tooltip') }}</span>
+                                                        </button>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
                                     </div>
                                 </div>
                             </template>
                             <div v-else class="group-empty">No Data</div>
-                            <el-tooltip
+                            <TooltipWrapper
                                 v-if="!isCreatingLocalGroup"
                                 :disabled="isLocalUserVrcPlusSupporter"
                                 :content="t('view.favorite.avatars.local_favorites')">
@@ -273,12 +289,12 @@
                                     <el-icon><Plus /></el-icon>
                                     <span>{{ t('view.favorite.avatars.new_group') }}</span>
                                 </div>
-                            </el-tooltip>
-                            <el-input
+                            </TooltipWrapper>
+                            <InputGroupField
                                 v-else
                                 ref="newLocalGroupInput"
                                 v-model="newLocalGroupName"
-                                size="small"
+                                size="sm"
                                 class="group-item__input"
                                 :placeholder="t('view.favorite.avatars.new_group')"
                                 @keyup.enter="handleLocalGroupCreationConfirm"
@@ -289,26 +305,25 @@
                     <div class="group-section">
                         <div class="group-section__header">
                             <span>Local History</span>
-                            <el-popover
-                                :visible="activeGroupMenu === historyGroupMenuKey"
-                                @update:visible="handleGroupMenuVisible(historyGroupMenuKey, $event)"
-                                placement="right"
-                                trigger="click"
-                                :hide-after="0"
-                                :width="180"
-                                popper-style="padding: 4px; border-radius: 8px;">
-                                <template #reference>
-                                    <el-button text size="small" :icon="MoreFilled" circle @click.stop></el-button>
-                                </template>
-                                <div class="favorites-group-menu">
-                                    <button
-                                        type="button"
-                                        class="favorites-group-menu__item favorites-group-menu__item--danger"
-                                        @click="handleHistoryClear">
-                                        <span>{{ t('view.favorite.clear_tooltip') }}</span>
-                                    </button>
-                                </div>
-                            </el-popover>
+                            <Popover
+                                :open="activeGroupMenu === historyGroupMenuKey"
+                                @update:open="handleGroupMenuVisible(historyGroupMenuKey, $event)">
+                                <PopoverTrigger asChild>
+                                    <Button class="rounded-full" size="icon-sm" variant="ghost" @click.stop
+                                        ><Ellipsis
+                                    /></Button>
+                                </PopoverTrigger>
+                                <PopoverContent side="right" class="w-45 p-1 rounded-lg">
+                                    <div class="favorites-group-menu">
+                                        <button
+                                            type="button"
+                                            class="favorites-group-menu__item favorites-group-menu__item--danger"
+                                            @click="handleHistoryClear">
+                                            <span>{{ t('view.favorite.clear_tooltip') }}</span>
+                                        </button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
                         </div>
                         <div class="group-section__list">
                             <div
@@ -325,8 +340,9 @@
                         </div>
                     </div>
                 </div>
-            </el-splitter-panel>
-            <el-splitter-panel>
+            </ResizablePanel>
+            <ResizableHandle with-handle @dragging="setAvatarSplitterDragging" />
+            <ResizablePanel :order="2">
                 <div class="favorites-content">
                     <div class="favorites-content__header">
                         <div class="favorites-content__title">
@@ -353,35 +369,41 @@
                         </div>
                         <div class="favorites-content__edit">
                             <span>{{ t('view.favorite.edit_mode') }}</span>
-                            <el-switch
-                                v-model="avatarEditMode"
-                                size="small"
-                                :disabled="isSearchActive || !activeRemoteGroup"></el-switch>
+                            <Switch v-model="avatarEditMode" :disabled="isSearchActive || !activeRemoteGroup" />
                         </div>
                     </div>
                     <div class="favorites-content__edit-actions">
                         <div
                             v-if="avatarEditMode && !isSearchActive && activeRemoteGroup"
                             class="favorites-content__actions">
-                            <el-button size="small" @click="toggleSelectAllAvatars">
+                            <Button size="sm" variant="outline" @click="toggleSelectAllAvatars">
                                 {{
                                     isAllAvatarsSelected
                                         ? t('view.favorite.deselect_all')
                                         : t('view.favorite.select_all')
                                 }}
-                            </el-button>
-                            <el-button size="small" :disabled="!hasAvatarSelection" @click="clearSelectedAvatars">
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                :disabled="!hasAvatarSelection"
+                                @click="clearSelectedAvatars">
                                 {{ t('view.favorite.clear') }}
-                            </el-button>
-                            <el-button size="small" :disabled="!hasAvatarSelection" @click="copySelectedAvatars">
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                :disabled="!hasAvatarSelection"
+                                @click="copySelectedAvatars">
                                 {{ t('view.favorite.copy') }}
-                            </el-button>
-                            <el-button
-                                size="small"
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
                                 :disabled="!hasAvatarSelection"
                                 @click="showAvatarBulkUnfavoriteSelectionConfirm">
                                 {{ t('view.favorite.bulk_unfavorite') }}
-                            </el-button>
+                            </Button>
                         </div>
                     </div>
                     <div ref="avatarFavoritesContainerRef" class="favorites-content__list">
@@ -492,26 +514,58 @@
                         </template>
                     </div>
                 </div>
-            </el-splitter-panel>
-        </el-splitter>
+            </ResizablePanel>
+        </ResizablePanelGroup>
         <AvatarExportDialog v-model:avatarExportDialogVisible="avatarExportDialogVisible" />
     </div>
 </template>
 
 <script setup>
-    import { computed, h, nextTick, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-    import { ElMessage, ElMessageBox, ElNotification, ElProgress } from 'element-plus';
-    import { Loading, MoreFilled, Plus, Refresh } from '@element-plus/icons-vue';
+    import { computed, markRaw, nextTick, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+    import { Ellipsis, Loader, RefreshCcw } from 'lucide-vue-next';
+    import { MoreFilled, Plus, Refresh } from '@element-plus/icons-vue';
+    import { InputGroupField, InputGroupSearch } from '@/components/ui/input-group';
+    import { Button } from '@/components/ui/button';
+    import { ElMessageBox } from 'element-plus';
+    import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import { useAppearanceSettingsStore, useAvatarStore, useFavoriteStore, useUserStore } from '../../stores';
+    import {
+        Select,
+        SelectContent,
+        SelectGroup,
+        SelectItem,
+        SelectTrigger,
+        SelectValue
+    } from '../../components/ui/select';
+    import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuItem,
+        DropdownMenuSeparator,
+        DropdownMenuTrigger
+    } from '../../components/ui/dropdown-menu';
+    import {
+        useAppearanceSettingsStore,
+        useAvatarStore,
+        useFavoriteStore,
+        useModalStore,
+        useUserStore
+    } from '../../stores';
+    import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
+    import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../components/ui/resizable';
     import { avatarRequest, favoriteRequest } from '../../api';
+    import { Badge } from '../../components/ui/badge';
+    import { Slider } from '../../components/ui/slider';
+    import { Switch } from '../../components/ui/switch';
     import { useFavoritesCardScaling } from './composables/useFavoritesCardScaling.js';
 
     import AvatarExportDialog from './dialogs/AvatarExportDialog.vue';
     import FavoritesAvatarItem from './components/FavoritesAvatarItem.vue';
     import FavoritesAvatarLocalHistoryItem from './components/FavoritesAvatarLocalHistoryItem.vue';
+    import InvalidAvatarsProgressToast from './components/InvalidAvatarsProgressToast.jsx';
     import configRepository from '../../service/config.js';
 
     import * as workerTimers from 'worker-timers';
@@ -528,10 +582,17 @@
     const avatarGroupVisibilityOptions = ref(['public', 'friends', 'private']);
     const historyGroupKey = 'local-history';
     const avatarSplitterSize = ref(260);
+    const avatarSplitterFallbackWidth = typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 1200;
+    const avatarSplitterGroupRef = ref(null);
+    const avatarSplitterPanelRef = ref(null);
+    const avatarSplitterWidth = ref(avatarSplitterFallbackWidth);
+    const avatarSplitterDraggingCount = ref(0);
+    let avatarSplitterObserver = null;
 
     const { sortFavorites } = storeToRefs(useAppearanceSettingsStore());
     const { setSortFavorites } = useAppearanceSettingsStore();
     const favoriteStore = useFavoriteStore();
+    const modalStore = useModalStore();
     const {
         favoriteAvatars,
         favoriteAvatarGroups,
@@ -586,6 +647,24 @@
 
     const avatarCardScalePercent = computed(() => Math.round(avatarCardScale.value * 100));
     const avatarCardSpacingPercent = computed(() => Math.round(avatarCardSpacing.value * 100));
+    const avatarCardScaleValue = computed({
+        get: () => [avatarCardScale.value],
+        set: (value) => {
+            const next = value?.[0];
+            if (typeof next === 'number') {
+                avatarCardScale.value = next;
+            }
+        }
+    });
+    const avatarCardSpacingValue = computed({
+        get: () => [avatarCardSpacing.value],
+        set: (value) => {
+            const next = value?.[0];
+            if (typeof next === 'number') {
+                avatarCardSpacing.value = next;
+            }
+        }
+    });
 
     const avatarExportDialogVisible = ref(false);
     const avatarFavoriteSearch = ref('');
@@ -593,7 +672,7 @@
     const avatarEditMode = ref(false);
     const selectedGroup = ref(null);
     const activeGroupMenu = ref(null);
-    const avatarToolbarMenuRef = ref();
+    const avatarToolbarMenuOpen = ref(false);
     const isCreatingLocalGroup = ref(false);
     const newLocalGroupName = ref('');
     const newLocalGroupInput = ref(null);
@@ -607,14 +686,12 @@
     const hasUserSelectedAvatarGroup = ref(false);
     const remoteAvatarGroupsResolved = ref(false);
 
-    const sortFav = computed({
-        get() {
-            return sortFavorites.value;
-        },
-        set() {
+    function handleSortFavoritesChange(value) {
+        const next = Boolean(value);
+        if (next !== sortFavorites.value) {
             setSortFavorites();
         }
-    });
+    }
 
     const hasAvatarSelection = computed(() => selectedFavoriteAvatars.value.length > 0);
     const hasSearchInput = computed(() => avatarFavoriteSearch.value.trim().length > 0);
@@ -628,7 +705,7 @@
     const historyGroupMenuKey = 'history';
 
     const closeAvatarToolbarMenu = () => {
-        avatarToolbarMenuRef.value?.handleClose?.();
+        avatarToolbarMenuOpen.value = false;
     };
 
     function handleAvatarImportClick() {
@@ -647,22 +724,108 @@
 
     async function loadAvatarSplitterPreferences() {
         const storedSize = await configRepository.getString('VRCX_FavoritesAvatarSplitter', '260');
-        if (typeof storedSize === 'string' && !Number.isNaN(Number(storedSize)) && Number(storedSize) > 0) {
-            avatarSplitterSize.value = Number(storedSize);
+        const parsedSize = Number(storedSize);
+        if (Number.isFinite(parsedSize) && parsedSize >= 0) {
+            avatarSplitterSize.value = parsedSize;
         }
     }
 
-    function handleAvatarSplitterResize(panelIndex, sizes) {
+    const getAvatarSplitterWidthRaw = () => {
+        const element = avatarSplitterGroupRef.value?.$el ?? avatarSplitterGroupRef.value;
+        const width = element?.getBoundingClientRect?.().width;
+        return Number.isFinite(width) ? width : null;
+    };
+
+    const getAvatarSplitterWidth = () => {
+        const width = getAvatarSplitterWidthRaw();
+        return Number.isFinite(width) && width > 0 ? width : avatarSplitterFallbackWidth;
+    };
+
+    const resolveDraggingPayload = (payload) => {
+        if (typeof payload === 'boolean') {
+            return payload;
+        }
+        if (payload && typeof payload === 'object') {
+            if (typeof payload.detail === 'boolean') {
+                return payload.detail;
+            }
+            if (typeof payload.dragging === 'boolean') {
+                return payload.dragging;
+            }
+        }
+        return Boolean(payload);
+    };
+
+    const setAvatarSplitterDragging = (payload) => {
+        const isDragging = resolveDraggingPayload(payload);
+        const next = avatarSplitterDraggingCount.value + (isDragging ? 1 : -1);
+        avatarSplitterDraggingCount.value = Math.max(0, next);
+    };
+
+    const pxToPercent = (px, groupWidth, min = 0) => {
+        const width = groupWidth ?? getAvatarSplitterWidth();
+        return Math.min(100, Math.max(min, (px / width) * 100));
+    };
+
+    const percentToPx = (percent, groupWidth) => (percent / 100) * groupWidth;
+
+    const avatarSplitterDefaultSize = computed(() =>
+        pxToPercent(avatarSplitterSize.value, avatarSplitterWidth.value, 0)
+    );
+    const avatarSplitterMinSize = computed(() => pxToPercent(0, avatarSplitterWidth.value, 0));
+    const avatarSplitterMaxSize = computed(() => pxToPercent(360, avatarSplitterWidth.value, 0));
+
+    const handleAvatarSplitterLayout = (sizes) => {
         if (!Array.isArray(sizes) || !sizes.length) {
             return;
         }
-        const nextSize = sizes[0];
-        if (nextSize <= 0) {
+
+        if (avatarSplitterDraggingCount.value === 0) {
             return;
         }
-        avatarSplitterSize.value = nextSize;
-        configRepository.setString('VRCX_FavoritesAvatarSplitter', nextSize.toString());
-    }
+
+        const rawWidth = getAvatarSplitterWidthRaw();
+        if (!Number.isFinite(rawWidth) || rawWidth <= 0) {
+            return;
+        }
+
+        const nextSize = sizes[0];
+        if (!Number.isFinite(nextSize)) {
+            return;
+        }
+
+        const nextPx = Math.round(percentToPx(nextSize, rawWidth));
+        const clampedPx = Math.min(360, Math.max(0, nextPx));
+        avatarSplitterSize.value = clampedPx;
+        configRepository.setString('VRCX_FavoritesAvatarSplitter', clampedPx.toString());
+    };
+
+    const updateAvatarSplitterWidth = () => {
+        const width = getAvatarSplitterWidth();
+        avatarSplitterWidth.value = width;
+        const targetSize = pxToPercent(avatarSplitterSize.value, width, 0);
+        avatarSplitterPanelRef.value?.resize?.(targetSize);
+    };
+
+    onMounted(async () => {
+        await nextTick();
+        updateAvatarSplitterWidth();
+        const element = avatarSplitterGroupRef.value?.$el ?? avatarSplitterGroupRef.value;
+        if (element && typeof ResizeObserver !== 'undefined') {
+            avatarSplitterObserver = new ResizeObserver(updateAvatarSplitterWidth);
+            avatarSplitterObserver.observe(element);
+        }
+    });
+
+    watch(avatarSplitterSize, (value, previous) => {
+        if (value === previous) {
+            return;
+        }
+        if (avatarSplitterDraggingCount.value > 0) {
+            return;
+        }
+        updateAvatarSplitterWidth();
+    });
 
     const groupedAvatarFavorites = computed(() => {
         const grouped = {};
@@ -1016,26 +1179,22 @@
         showAvatarImportDialog();
     }
 
-    function showAvatarBulkUnfavoriteSelectionConfirm() {
+    async function showAvatarBulkUnfavoriteSelectionConfirm() {
         if (!selectedFavoriteAvatars.value.length) {
             return;
         }
         const total = selectedFavoriteAvatars.value.length;
-        ElMessageBox.confirm(
-            `Are you sure you want to unfavorite ${total} favorites?\n            This action cannot be undone.`,
-            `Delete ${total} favorites?`,
-            {
-                confirmButtonText: 'Confirm',
-                cancelButtonText: 'Cancel',
-                type: 'info'
-            }
-        )
-            .then((action) => {
-                if (action === 'confirm') {
-                    bulkUnfavoriteSelectedAvatars([...selectedFavoriteAvatars.value]);
-                }
-            })
-            .catch(() => {});
+
+        const result = await modalStore.confirm({
+            description: `Are you sure you want to unfavorite ${total} favorites?\nThis action cannot be undone.`,
+            title: `Delete ${total} favorites?`
+        });
+
+        if (!result.ok) {
+            return;
+        }
+
+        bulkUnfavoriteSelectedAvatars([...selectedFavoriteAvatars.value]);
     }
 
     function bulkUnfavoriteSelectedAvatars(ids) {
@@ -1085,17 +1244,14 @@
     async function handleCheckInvalidAvatars(groupName) {
         handleGroupMenuVisible(localGroupMenuKey(groupName), false);
 
-        try {
-            await ElMessageBox.confirm(
-                t('view.favorite.avatars.check_description'),
-                t('view.favorite.avatars.check_invalid'),
-                {
-                    confirmButtonText: t('confirm.confirm_button'),
-                    cancelButtonText: t('confirm.cancel_button'),
-                    type: 'info'
-                }
-            );
-        } catch {
+        const startCheckResult = await modalStore.confirm({
+            description: t('view.favorite.avatars.check_description'),
+            title: t('view.favorite.avatars.check_invalid'),
+            confirmText: t('confirm.confirm_button'),
+            cancelText: t('confirm.cancel_button')
+        });
+
+        if (!startCheckResult.ok) {
             return;
         }
 
@@ -1105,148 +1261,73 @@
             percentage: 0
         });
 
-        const ProgressContent = {
-            setup() {
-                return () =>
-                    h('div', { style: 'padding: 4px 0;' }, [
-                        h(
-                            'p',
-                            {
-                                style: 'margin: 0 0 12px 0; font-size: 14px; color: var(--el-text-color-primary);'
-                            },
-                            t('view.favorite.avatars.checking_progress', {
-                                current: progressState.current,
-                                total: progressState.total
-                            })
-                        ),
-                        h(ElProgress, {
-                            percentage: progressState.percentage,
-                            style: 'margin-top: 8px;'
-                        })
-                    ]);
-            }
-        };
-
-        let progressNotification = null;
+        let progressToastId;
 
         try {
-            progressNotification = ElNotification({
-                title: t('view.favorite.avatars.checking'),
-                message: h(ProgressContent),
-                duration: 0,
-                type: 'info',
-                position: 'bottom-right'
+            progressToastId = toast(markRaw(InvalidAvatarsProgressToast), {
+                duration: Infinity,
+                componentProps: {
+                    t,
+                    progress: progressState,
+                    onDismiss: () => progressToastId && toast.dismiss(progressToastId)
+                }
             });
 
             const result = await checkInvalidLocalAvatars(groupName, (current, total) => {
                 progressState.current = current;
                 progressState.total = total;
-                progressState.percentage = Math.floor((current / total) * 100);
+                progressState.percentage = total ? Math.floor((current / total) * 100) : 0;
             });
 
-            if (progressNotification) {
-                progressNotification.close();
-                progressNotification = null;
+            if (progressToastId) {
+                toast.dismiss(progressToastId);
             }
 
             if (result.invalid === 0) {
-                ElNotification({
-                    title: t('view.favorite.avatars.check_complete'),
-                    message: t('view.favorite.avatars.no_invalid_found'),
-                    type: 'success',
-                    duration: 5000,
-                    position: 'bottom-right'
-                });
+                toast.success(t('view.favorite.avatars.no_invalid_found'));
                 return;
             }
 
-            const confirmDelete = await ElMessageBox.confirm(
-                h('div', [
-                    h(
-                        'p',
-                        { style: 'margin-bottom: 12px;' },
-                        t('view.favorite.avatars.confirm_delete_description', { count: result.invalid })
-                    ),
-                    h(
-                        'div',
-                        { style: 'margin-top: 12px; margin-bottom: 8px; font-weight: 600;' },
-                        t('view.favorite.avatars.removed_list_header')
-                    ),
-                    h(
-                        'div',
-                        {
-                            style: 'max-height: 200px; overflow-y: auto; background: var(--el-fill-color-lighter); padding: 8px; border-radius: 4px;'
-                        },
-                        result.invalidIds.map((id) =>
-                            h('div', { style: 'font-family: monospace; font-size: 12px; padding: 2px 0;' }, id)
-                        )
-                    )
-                ]),
-                t('view.favorite.avatars.confirm_delete_invalid'),
-                {
-                    confirmButtonText: t('confirm.confirm_button'),
-                    cancelButtonText: t('view.favorite.avatars.copy_removed_ids'),
-                    distinguishCancelAndClose: true,
-                    type: 'warning',
-                    beforeClose: (action, instance, done) => {
-                        if (action === 'cancel') {
-                            navigator.clipboard
-                                .writeText(result.invalidIds.join('\n'))
-                                .then(() => {
-                                    ElMessage({
-                                        message: t('view.favorite.avatars.copied_ids'),
-                                        type: 'success'
-                                    });
-                                })
-                                .catch(() => {
-                                    ElMessage({
-                                        message: 'Failed to copy',
-                                        type: 'error'
-                                    });
-                                });
-                            return;
-                        }
-                        done();
-                    }
-                }
-            )
-                .then(() => true)
-                .catch(() => false);
+            const invalidIdsText = result.invalidIds.join('\n');
 
-            if (!confirmDelete) {
-                ElNotification({
-                    title: t('view.favorite.avatars.check_complete'),
-                    message: t('view.favorite.avatars.delete_cancelled'),
-                    type: 'info',
-                    duration: 5000,
-                    position: 'bottom-right'
-                });
+            const confirmDeleteResult = await modalStore.confirm({
+                description:
+                    `${t('view.favorite.avatars.confirm_delete_description', { count: result.invalid })}` +
+                    `\n\n${t('view.favorite.avatars.removed_list_header')}\n` +
+                    invalidIdsText,
+                title: t('view.favorite.avatars.confirm_delete_invalid'),
+                confirmText: t('confirm.confirm_button'),
+                cancelText: t('view.favorite.avatars.copy_removed_ids')
+            });
+
+            if (!confirmDeleteResult.ok) {
+                if (confirmDeleteResult.reason === 'cancel') {
+                    navigator.clipboard
+                        .writeText(invalidIdsText)
+                        .then(() => {
+                            toast.success(t('view.favorite.avatars.copied_ids'));
+                        })
+                        .catch(() => {
+                            toast.error(t('view.favorite.avatars.copy_failed'));
+                        });
+                }
+                toast.info(t('view.favorite.avatars.delete_cancelled'));
                 return;
             }
 
             const removeResult = await removeInvalidLocalAvatars(result.invalidIds, groupName);
 
-            ElNotification({
-                title: t('view.favorite.avatars.check_complete'),
-                message: t('view.favorite.avatars.delete_summary', {
+            toast.success(
+                t('view.favorite.avatars.delete_summary', {
                     removed: removeResult.removed
-                }),
-                type: 'success',
-                duration: 5000,
-                position: 'bottom-right'
-            });
+                })
+            );
         } catch (err) {
-            if (progressNotification) {
-                progressNotification.close();
+            if (progressToastId) {
+                toast.dismiss(progressToastId);
             }
             console.error(err);
-            ElNotification({
-                title: t('message.api_handler.avatar_private_or_deleted'),
-                message: String(err.message || err),
-                type: 'error',
-                duration: 5000,
-                position: 'bottom-right'
-            });
+            toast.error(String(err.message || err));
         }
     }
 
@@ -1287,10 +1368,7 @@
                                 favoriteGroupId: args.json.id
                             }
                         });
-                        ElMessage({
-                            message: t('prompt.change_favorite_group_name.message.success'),
-                            type: 'success'
-                        });
+                        toast.success(t('prompt.change_favorite_group_name.message.success'));
                         refreshFavorites();
                     });
             })
@@ -1310,10 +1388,7 @@
                     favoriteGroupId: args.json.id
                 }
             });
-            ElMessage({
-                message: 'Group visibility changed',
-                type: 'success'
-            });
+            toast.success('Group visibility changed');
             if (menuKey) {
                 handleGroupMenuVisible(menuKey, false);
             }
@@ -1323,18 +1398,16 @@
     }
 
     function clearFavoriteGroup(ctx) {
-        ElMessageBox.confirm('Continue? Clear Group', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then((action) => {
-                if (action === 'confirm') {
-                    favoriteRequest.clearFavoriteGroup({
-                        type: ctx.type,
-                        group: ctx.name
-                    });
-                }
+        modalStore
+            .confirm({
+                description: 'Continue? Clear Group',
+                title: 'Confirm'
+            })
+            .then(() => {
+                favoriteRequest.clearFavoriteGroup({
+                    type: ctx.type,
+                    group: ctx.name
+                });
             })
             .catch(() => {});
     }
@@ -1366,16 +1439,12 @@
     }
 
     function promptLocalAvatarFavoriteGroupDelete(group) {
-        ElMessageBox.confirm(`Delete Group? ${group}`, 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then((action) => {
-                if (action === 'confirm') {
-                    deleteLocalAvatarFavoriteGroup(group);
-                }
+        modalStore
+            .confirm({
+                description: `Delete Group? ${group}`,
+                title: 'Confirm'
             })
+            .then(() => deleteLocalAvatarFavoriteGroup(group))
             .catch(() => {});
     }
 
@@ -1497,17 +1566,11 @@
         if (typeof window !== 'undefined') {
             window.removeEventListener('resize', maybeFillLocalAvatarViewport);
         }
+        if (avatarSplitterObserver) {
+            avatarSplitterObserver.disconnect();
+            avatarSplitterObserver = null;
+        }
     });
-
-    function userFavoriteAvatarsStatusForFavTab(visibility) {
-        if (visibility === 'public') {
-            return 'primary';
-        }
-        if (visibility === 'friends') {
-            return 'success';
-        }
-        return 'info';
-    }
 
     function formatVisibility(value) {
         if (!value) {
@@ -1991,7 +2054,7 @@
         margin-right: var(--favorites-card-checkbox-margin, 10px);
     }
 
-    :deep(.favorites-search-card__action--checkbox .el-checkbox) {
+    :deep(.favorites-search-card__action--checkbox [data-slot='checkbox']) {
         margin: 0;
     }
 

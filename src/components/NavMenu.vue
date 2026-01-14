@@ -2,23 +2,21 @@
     <div class="x-menu-container nav-menu-container" :class="{ 'is-collapsed': isCollapsed }">
         <template v-if="navLayoutReady">
             <div class="nav-menu-body mt-5">
-                <div v-if="updateInProgress" class="pending-update" @click="showVRCXUpdateDialog">
-                    <el-progress
-                        type="circle"
-                        :width="50"
-                        :stroke-width="3"
-                        :percentage="updateProgress"
-                        :format="updateProgressText"
-                        style="padding: 7px"></el-progress>
-                </div>
-                <div v-else-if="pendingVRCXUpdate || pendingVRCXInstall" class="pending-update">
-                    <el-button
-                        type="success"
-                        plain
-                        style="font-size: 19px; height: 36px; width: 44px; margin: 10px"
+                <div v-if="pendingVRCXUpdate || pendingVRCXInstall" class="pending-update">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        class="hover:bg-transparent"
+                        style="font-size: 19px; height: 36px; margin: 10px"
                         @click="showVRCXUpdateDialog">
-                        <i class="ri-download-line"></i>
-                    </el-button>
+                        <span class="relative inline-flex items-center justify-center">
+                            <i class="ri-arrow-down-circle-line text-muted-foreground text-[20px]"></i>
+                            <span class="absolute top-0.5 -right-1 h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                        </span>
+                        <span v-if="!isCollapsed" class="text-[13px] text-muted-foreground">{{
+                            t('nav_menu.update_available')
+                        }}</span>
+                    </Button>
                 </div>
 
                 <el-menu ref="navMenuRef" class="nav-menu" :collapse="isCollapsed" :collapse-transition="false">
@@ -46,7 +44,7 @@
                                 v-for="entry in item.children"
                                 :key="entry.index"
                                 :index="entry.index"
-                                class="pl-8!"
+                                class="pl-9!"
                                 :class="{ notify: isEntryNotified(entry) }"
                                 @click="handleSubmenuClick(entry, item.index)">
                                 <i v-show="entry.icon" :class="entry.icon"></i>
@@ -60,21 +58,6 @@
             </div>
 
             <div class="nav-menu-container-bottom mb-4">
-                <el-tooltip
-                    v-if="branch === 'Nightly'"
-                    :show-after="150"
-                    :content="'Feedback'"
-                    :disabled="!isCollapsed"
-                    placement="right">
-                    <div
-                        class="bottom-button"
-                        id="feedback"
-                        @click="!sentryErrorReporting && setSentryErrorReporting()">
-                        <i class="ri-feedback-line"></i>
-                        <span v-show="!isCollapsed" class="bottom-button__label">Feedback</span>
-                    </div>
-                </el-tooltip>
-
                 <el-popover
                     v-model:visible="supportMenuVisible"
                     placement="right"
@@ -110,10 +93,10 @@
                     </div>
                     <template #reference>
                         <div>
-                            <el-tooltip
-                                :show-after="150"
+                            <TooltipWrapper
+                                :delay-duration="150"
                                 :content="t('nav_tooltip.help_support')"
-                                placement="right"
+                                side="right"
                                 :disabled="!isCollapsed">
                                 <div class="bottom-button">
                                     <i class="ri-question-line"></i>
@@ -121,7 +104,7 @@
                                         t('nav_tooltip.help_support')
                                     }}</span>
                                 </div>
-                            </el-tooltip>
+                            </TooltipWrapper>
                         </div>
                     </template>
                 </el-popover>
@@ -204,20 +187,6 @@
                                                 ✓
                                             </span>
                                         </button>
-
-                                        <el-divider></el-divider>
-
-                                        <div class="nav-menu-theme__custom">
-                                            <span class="nav-menu-theme__custom-label">{{
-                                                t('view.settings.appearance.theme_color.header')
-                                            }}</span>
-                                            <el-color-picker
-                                                :model-value="currentPrimary"
-                                                size="small"
-                                                :disabled="isApplyingPrimaryColor"
-                                                :teleported="false"
-                                                @change="handleCustomThemeColorChange" />
-                                        </div>
                                     </div>
                                     <template #reference>
                                         <button type="button" class="nav-menu-theme__item" @click.prevent>
@@ -252,18 +221,18 @@
                         </div>
                     </template>
                 </el-popover>
-                <el-tooltip
-                    :show-after="150"
+                <TooltipWrapper
+                    :delay-duration="150"
                     :content="t('nav_tooltip.expand_menu')"
                     :disabled="!isCollapsed"
-                    placement="right">
+                    side="right">
                     <div class="bottom-button" @click="toggleNavCollapse">
                         <i class="ri-side-bar-line"></i>
                         <span v-show="!isCollapsed" class="bottom-button__label">{{
                             t('nav_tooltip.collapse_menu')
                         }}</span>
                     </div>
-                </el-tooltip>
+                </TooltipWrapper>
             </div>
         </template>
     </div>
@@ -277,21 +246,21 @@
 
 <script setup>
     import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue';
-    import { ElMessageBox, dayjs } from 'element-plus';
+    import { Button } from '@/components/ui/button';
+    import { dayjs } from 'element-plus';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
     import { useRouter } from 'vue-router';
 
     import {
-        useAdvancedSettingsStore,
         useAppearanceSettingsStore,
         useAuthStore,
+        useModalStore,
         useSearchStore,
         useUiStore,
         useVRCXUpdaterStore
     } from '../stores';
     import { THEME_CONFIG, links, navDefinitions } from '../shared/constants';
-    import { getSentry } from '../plugin';
     import { openExternalLink } from '../shared/utils';
     import { useThemePrimaryColor } from '../composables/useElementTheme';
 
@@ -301,6 +270,7 @@
 
     const { t, locale } = useI18n();
     const router = useRouter();
+    const modalStore = useModalStore();
 
     const createDefaultNavLayout = () => [
         { type: 'item', key: 'feed' },
@@ -340,8 +310,6 @@
     const uiStore = useUiStore();
     const { notifiedMenus } = storeToRefs(uiStore);
     const { directAccessPaste } = useSearchStore();
-    const { sentryErrorReporting } = storeToRefs(useAdvancedSettingsStore());
-    const { setSentryErrorReporting } = useAdvancedSettingsStore();
     const { logout } = useAuthStore();
     const appearanceSettingsStore = useAppearanceSettingsStore();
     const { themeMode, isNavCollapsed: isCollapsed } = storeToRefs(appearanceSettingsStore);
@@ -549,21 +517,7 @@
     const handleThemeSelect = (theme) => {
         themeMenuVisible.value = false;
         settingsMenuVisible.value = false;
-        appearanceSettingsStore.saveThemeMode(theme);
-    };
-
-    const handleCustomThemeColorChange = async (color) => {
-        if (!color) {
-            await initPrimaryColor();
-            themeColorMenuVisible.value = false;
-            themeMenuVisible.value = false;
-            settingsMenuVisible.value = false;
-            return;
-        }
-        await applyCustomPrimaryColor(color);
-        themeColorMenuVisible.value = false;
-        themeMenuVisible.value = false;
-        settingsMenuVisible.value = false;
+        appearanceSettingsStore.setThemeMode(theme);
     };
 
     const handleThemeColorSelect = async (colorFamily) => {
@@ -607,12 +561,15 @@
     };
 
     const handleCustomNavReset = () => {
-        ElMessageBox.confirm(t('nav_menu.custom_nav.restore_default_confirm'), {
-            type: 'warning',
-            confirmButtonText: t('nav_menu.custom_nav.restore_default'),
-            cancelButtonText: t('nav_menu.custom_nav.cancel')
-        })
-            .then(async () => {
+        modalStore
+            .confirm({
+                description: t('nav_menu.custom_nav.restore_default_confirm'),
+                title: t('confirm.title'),
+                confirmText: t('nav_menu.custom_nav.restore_default'),
+                cancelText: t('nav_menu.custom_nav.cancel')
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
                 const defaults = sanitizeLayout(createDefaultNavLayout());
                 navLayout.value = defaults;
                 await saveNavLayout(defaults);
@@ -791,17 +748,6 @@
     onMounted(async () => {
         await initPrimaryColor();
         await loadNavMenuConfig();
-
-        if (!NIGHTLY || !sentryErrorReporting.value) return;
-
-        try {
-            const Sentry = await getSentry();
-
-            const feedback = Sentry.getFeedback();
-            feedback?.attachTo(document.getElementById('feedback'));
-        } catch (error) {
-            console.error('Error setting up Sentry feedback:', error);
-        }
     });
 </script>
 
@@ -812,10 +758,11 @@
 
     .nav-menu-container {
         position: relative;
-        width: 240px;
+        width: 100%;
+        min-width: 64px;
         height: 100%;
         display: flex;
-        flex: 0 0 240px;
+        flex: 1 1 auto;
         flex-direction: column;
         align-items: stretch;
         justify-content: flex-start;
@@ -928,8 +875,7 @@
     }
 
     .nav-menu-container.is-collapsed {
-        width: 64px;
-        flex-basis: 64px;
+        width: 100%;
     }
 
     .nav-menu-container.is-collapsed .nav-menu :deep(.el-sub-menu__title > div) {

@@ -1,5 +1,5 @@
 <template>
-    <el-card :body-style="{ padding: '0px' }" class="event-card" :class="cardClass">
+    <Card class="event-card p-0 gap-0" :class="cardClass">
         <img :src="bannerUrl" @click="showFullscreenImageDialog(bannerUrl)" class="banner" />
         <div class="event-content">
             <div class="event-title">
@@ -15,14 +15,16 @@
                         </template>
 
                         <el-descriptions-item>
-                            <el-button type="default" :icon="Calendar" size="small" @click="openCalendarEvent(event)">{{
-                                t('dialog.group_calendar.event_card.export_to_calendar')
-                            }}</el-button>
+                            <Button variant="outline" size="sm" @click="openCalendarEvent(event)">
+                                <Calendar />
+                                {{ t('dialog.group_calendar.event_card.export_to_calendar') }}
+                            </Button>
                         </el-descriptions-item>
                         <el-descriptions-item>
-                            <el-button type="default" :icon="Download" size="small" @click="downloadEventIcs(event)">{{
-                                t('dialog.group_calendar.event_card.download_ics')
-                            }}</el-button>
+                            <Button variant="outline" size="sm" @click="downloadEventIcs(event)">
+                                <Download />
+                                {{ t('dialog.group_calendar.event_card.download_ics') }}
+                            </Button>
                         </el-descriptions-item>
                         <el-descriptions-item :label="t('dialog.group_calendar.event_card.category')">
                             {{ capitalizeFirst(event.category) }}
@@ -56,19 +58,26 @@
                 </div>
             </div>
         </div>
-        <div v-if="isFollowing" @click="toggleEventFollow(event)" class="following-badge is-following">
-            <el-icon><Star /></el-icon>
+        <div class="badges">
+            <div @click="copyEventLink(event)" class="share-badge">
+                <el-icon><Share /></el-icon>
+            </div>
+            <div v-if="isFollowing" @click="toggleEventFollow(event)" class="following-badge is-following">
+                <el-icon><Star /></el-icon>
+            </div>
+            <div v-else @click="toggleEventFollow(event)" class="following-badge">
+                <el-icon><StarFilled /></el-icon>
+            </div>
         </div>
-        <div v-else @click="toggleEventFollow(event)" class="following-badge">
-            <el-icon><StarFilled /></el-icon>
-        </div>
-    </el-card>
+    </Card>
 </template>
 
 <script setup>
-    import { Calendar, Download, Star, StarFilled } from '@element-plus/icons-vue';
-    import { ElMessage } from 'element-plus';
+    import { Calendar, Download, Share, Star, StarFilled } from '@element-plus/icons-vue';
+    import { Button } from '@/components/ui/button';
+    import { Card } from '@/components/ui/card';
     import { computed } from 'vue';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
     import { useGalleryStore, useGroupStore } from '../../../stores';
@@ -148,10 +157,7 @@
             }
             return response.data;
         } catch (error) {
-            ElMessage({
-                message: `Failed to download .ics file, ${error.message}`,
-                type: 'error'
-            });
+            toast.error(`Failed to download .ics file, ${error.message}`);
             console.error('Failed to download .ics file:', error);
         }
     }
@@ -178,6 +184,12 @@
         emit('update-following-calendar-data', args.json);
     }
 
+    function copyEventLink(event) {
+        const eventLink = `https://vrchat.com/home/group/${event.ownerId}/calendar/${event.id}`;
+        navigator.clipboard.writeText(eventLink);
+        toast.success(t('dialog.group_calendar.event_card.copied_event_link'));
+    }
+
     const formatTimeRange = (startsAt, endsAt) =>
         `${formatDateFilter(startsAt, 'time')} - ${formatDateFilter(endsAt, 'time')}`;
 
@@ -194,6 +206,7 @@
         position: relative;
         overflow: visible;
         border-radius: 8px;
+        width: 100%;
     }
 
     .event-card:hover {
@@ -215,10 +228,6 @@
         max-width: 320px;
     }
 
-    .event-card :deep(.el-card__body) {
-        overflow: visible;
-    }
-
     .event-card .banner {
         cursor: pointer;
         width: 100%;
@@ -234,26 +243,46 @@
         height: 100px;
     }
 
-    .event-card .following-badge {
+    .event-card .badges {
+        display: inline-flex;
         position: absolute;
         top: -8px;
         right: -9px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background-color: var(--el-text-color-regular);
-        color: var(--el-bg-color);
+        z-index: 10;
+        font-size: 15px;
+    }
+
+    .event-card .badges .following-badge {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        width: 24px;
+        height: 24px;
+        gap: 4px;
+        border-radius: 50%;
+        background-color: var(--el-text-color-regular);
+        color: var(--el-bg-color);
         box-shadow: var(--el-box-shadow-lighter);
-        z-index: 10;
         cursor: pointer;
     }
 
-    .event-card .following-badge.is-following {
+    .event-card .badges .following-badge.is-following {
         background-color: var(--group-calendar-badge-following, var(--el-color-success));
+    }
+
+    .event-card .badges .share-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        gap: 4px;
+        border-radius: 50%;
+        background-color: var(--el-text-color-regular);
+        color: var(--el-bg-color);
+        box-shadow: var(--el-box-shadow-lighter);
+        cursor: pointer;
+        margin-right: 5px;
     }
 
     .event-card .event-content {
@@ -320,9 +349,4 @@
         color: var(--el-color-primary);
     }
 
-    :deep(.el-card) {
-        border-radius: 8px;
-        width: 100%;
-        overflow: visible;
-    }
 </style>

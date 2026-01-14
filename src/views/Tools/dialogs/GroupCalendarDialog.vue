@@ -9,17 +9,17 @@
         <template #header>
             <div class="dialog-title-container">
                 <span>{{ t('dialog.group_calendar.header') }}</span>
-                <el-button @click="toggleViewMode" type="primary" size="small" class="view-toggle-btn">
+                <Button size="sm" variant="outline" @click="toggleViewMode" class="view-toggle-btn">
                     {{
                         viewMode === 'timeline'
                             ? t('dialog.group_calendar.list_view')
                             : t('dialog.group_calendar.calendar_view')
                     }}
-                </el-button>
+                </Button>
             </div>
             <div class="featured-switch">
                 <span class="featured-switch-text">{{ t('dialog.group_calendar.featured_events') }}</span>
-                <el-switch v-model="showFeaturedEvents" @change="toggleFeaturedEvents" size="small" />
+                <Switch v-model="showFeaturedEvents" @update:modelValue="toggleFeaturedEvents" />
             </div>
         </template>
         <div class="top-content">
@@ -76,12 +76,10 @@
                 </div>
                 <div v-else key="grid" class="grid-view">
                     <div class="search-container">
-                        <el-input
+                        <InputGroupSearch
                             v-model="searchQuery"
+                            size="sm"
                             :placeholder="t('dialog.group_calendar.search_placeholder')"
-                            clearable
-                            size="small"
-                            prefix-:icon="Search"
                             class="search-input" />
                     </div>
 
@@ -126,11 +124,14 @@
 <script setup>
     import { computed, onMounted, ref, watch } from 'vue';
     import { ArrowRight } from '@element-plus/icons-vue';
+    import { Button } from '@/components/ui/button';
+    import { InputGroupSearch } from '@/components/ui/input-group';
     import { useI18n } from 'vue-i18n';
 
     import dayjs from 'dayjs';
 
     import { formatDateFilter, getGroupName, replaceBioSymbols } from '../../../shared/utils';
+    import { Switch } from '../../../components/ui/switch';
     import { groupRequest } from '../../../api';
     import { processBulk } from '../../../service/request';
     import { useGroupStore } from '../../../stores';

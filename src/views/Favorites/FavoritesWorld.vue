@@ -2,80 +2,104 @@
     <div class="favorites-page x-container" v-loading="isFavoriteLoading">
         <div class="favorites-toolbar">
             <div>
-                <el-select v-model="sortFav" class="favorites-toolbar__select">
-                    <template #prefix>
-                        <i class="ri-sort-asc"></i>
-                    </template>
-                    <el-option :label="t('view.settings.appearance.appearance.sort_favorite_by_name')" :value="false" />
-                    <el-option :label="t('view.settings.appearance.appearance.sort_favorite_by_date')" :value="true" />
-                </el-select>
+                <Select :model-value="sortFavorites" @update:modelValue="handleSortFavoritesChange">
+                    <SelectTrigger size="sm" class="favorites-toolbar__select">
+                        <span class="flex items-center gap-2">
+                            <i class="ri-sort-asc"></i>
+                            <SelectValue
+                                :placeholder="t('view.settings.appearance.appearance.sort_favorite_by_name')" />
+                        </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            <SelectItem
+                                :value="false"
+                                :text-value="t('view.settings.appearance.appearance.sort_favorite_by_name')">
+                                {{ t('view.settings.appearance.appearance.sort_favorite_by_name') }}
+                            </SelectItem>
+                            <SelectItem
+                                :value="true"
+                                :text-value="t('view.settings.appearance.appearance.sort_favorite_by_date')">
+                                {{ t('view.settings.appearance.appearance.sort_favorite_by_date') }}
+                            </SelectItem>
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
             </div>
             <div class="favorites-toolbar__right">
-                <el-input
+                <InputGroupSearch
                     v-model="worldFavoriteSearch"
-                    clearable
                     class="favorites-toolbar__search"
                     :placeholder="t('view.favorite.worlds.search')"
                     @input="searchWorldFavorites" />
-                <el-dropdown ref="worldToolbarMenuRef" trigger="click" :hide-on-click="false">
-                    <el-button :icon="MoreFilled" size="small" circle />
-                    <template #dropdown>
-                        <el-dropdown-menu class="favorites-dropdown">
-                            <li class="favorites-dropdown__control" @click.stop>
-                                <div class="favorites-dropdown__control-header">
-                                    <span>Scale</span>
-                                    <span class="favorites-dropdown__control-value">
-                                        {{ worldCardScalePercent }}%
-                                    </span>
-                                </div>
-                                <el-slider
-                                    v-model="worldCardScale"
-                                    class="favorites-dropdown__slider"
-                                    :min="worldCardScaleSlider.min"
-                                    :max="worldCardScaleSlider.max"
-                                    :step="worldCardScaleSlider.step"
-                                    :show-tooltip="false" />
-                            </li>
-                            <li class="favorites-dropdown__control" @click.stop>
-                                <div class="favorites-dropdown__control-header">
-                                    <span>Spacing</span>
-                                    <span class="favorites-dropdown__control-value">
-                                        {{ worldCardSpacingPercent }}%
-                                    </span>
-                                </div>
-                                <el-slider
-                                    v-model="worldCardSpacing"
-                                    class="favorites-dropdown__slider"
-                                    :min="worldCardSpacingSlider.min"
-                                    :max="worldCardSpacingSlider.max"
-                                    :step="worldCardSpacingSlider.step"
-                                    :show-tooltip="false" />
-                            </li>
-                            <el-dropdown-item @click="handleWorldImportClick">
-                                {{ t('view.favorite.import') }}
-                            </el-dropdown-item>
-                            <el-dropdown-item divided @click="handleWorldExportClick">
-                                {{ t('view.favorite.export') }}
-                            </el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
+                <DropdownMenu v-model:open="worldToolbarMenuOpen">
+                    <DropdownMenuTrigger as-child>
+                        <Button class="rounded-full" size="icon" variant="outline"><Ellipsis /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent class="favorites-dropdown">
+                        <li class="favorites-dropdown__control" @click.stop>
+                            <div class="favorites-dropdown__control-header">
+                                <span>Scale</span>
+                                <span class="favorites-dropdown__control-value"> {{ worldCardScalePercent }}% </span>
+                            </div>
+                            <Slider
+                                v-model="worldCardScaleValue"
+                                class="favorites-dropdown__slider"
+                                :min="worldCardScaleSlider.min"
+                                :max="worldCardScaleSlider.max"
+                                :step="worldCardScaleSlider.step" />
+                        </li>
+                        <li class="favorites-dropdown__control" @click.stop>
+                            <div class="favorites-dropdown__control-header">
+                                <span>Spacing</span>
+                                <span class="favorites-dropdown__control-value"> {{ worldCardSpacingPercent }}% </span>
+                            </div>
+                            <Slider
+                                v-model="worldCardSpacingValue"
+                                class="favorites-dropdown__slider"
+                                :min="worldCardSpacingSlider.min"
+                                :max="worldCardSpacingSlider.max"
+                                :step="worldCardSpacingSlider.step" />
+                        </li>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem @click="handleWorldImportClick">
+                            {{ t('view.favorite.import') }}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem @click="handleWorldExportClick">
+                            {{ t('view.favorite.export') }}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </div>
-        <el-splitter class="favorites-splitter" @resize-end="handleWorldSplitterResize">
-            <el-splitter-panel :size="worldSplitterSize" :min="0" :max="360" collapsible>
+        <ResizablePanelGroup
+            ref="worldSplitterGroupRef"
+            direction="horizontal"
+            class="favorites-splitter"
+            @layout="handleWorldSplitterLayout">
+            <ResizablePanel
+                ref="worldSplitterPanelRef"
+                :default-size="worldSplitterDefaultSize"
+                :min-size="worldSplitterMinSize"
+                :max-size="worldSplitterMaxSize"
+                :collapsed-size="0"
+                collapsible
+                :order="1">
                 <div class="favorites-groups-panel">
                     <div class="group-section">
                         <div class="group-section__header">
                             <span>{{ t('view.favorite.worlds.vrchat_favorites') }}</span>
-                            <el-tooltip placement="bottom" :content="t('view.favorite.refresh_favorites_tooltip')">
-                                <el-button
-                                    :loading="isFavoriteLoading"
-                                    size="small"
-                                    :icon="Refresh"
-                                    circle
-                                    @click.stop="handleRefreshFavorites" />
-                            </el-tooltip>
+                            <TooltipWrapper side="bottom" :content="t('view.favorite.refresh_favorites_tooltip')">
+                                <Button
+                                    class="rounded-full"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    :disabled="isFavoriteLoading"
+                                    @click.stop="handleRefreshFavorites">
+                                    <Spinner v-if="isFavoriteLoading" />
+                                    <Refresh v-else />
+                                </Button>
+                            </TooltipWrapper>
                         </div>
                         <div class="group-section__list">
                             <template v-if="favoriteWorldGroups.length">
@@ -92,75 +116,68 @@
                                         <span class="group-item__count">{{ group.count }}/{{ group.capacity }}</span>
                                     </div>
                                     <div class="group-item__bottom">
-                                        <el-tag
-                                            size="small"
-                                            effect="plain"
-                                            :type="userFavoriteWorldsStatusForFavTab(group.visibility)">
+                                        <Badge variant="outline">
                                             {{ formatVisibility(group.visibility) }}
-                                        </el-tag>
-                                        <el-popover
-                                            :visible="activeGroupMenu === remoteGroupMenuKey(group.key)"
-                                            @update:visible="
+                                        </Badge>
+                                        <Popover
+                                            :open="activeGroupMenu === remoteGroupMenuKey(group.key)"
+                                            @update:open="
                                                 handleGroupMenuVisible(remoteGroupMenuKey(group.key), $event)
-                                            "
-                                            placement="right"
-                                            trigger="click"
-                                            :hide-after="0"
-                                            :width="200"
-                                            popper-style="padding: 4px; border-radius: 8px;">
-                                            <template #reference>
-                                                <el-button
-                                                    text
-                                                    size="small"
-                                                    :icon="MoreFilled"
-                                                    circle
-                                                    @click.stop></el-button>
-                                            </template>
-                                            <div class="favorites-group-menu">
-                                                <button
-                                                    type="button"
-                                                    class="favorites-group-menu__item"
-                                                    @click="handleRemoteRename(group)">
-                                                    <span>{{ t('view.favorite.rename_tooltip') }}</span>
-                                                </button>
-                                                <el-popover
-                                                    placement="right-start"
-                                                    trigger="hover"
-                                                    :width="200"
-                                                    popper-style="padding: 4px; border-radius: 8px;">
-                                                    <div class="group-visibility-menu">
-                                                        <button
-                                                            v-for="visibility in worldGroupVisibilityOptions"
-                                                            :key="visibility"
-                                                            type="button"
-                                                            class="group-visibility-menu__item"
-                                                            :class="{ 'is-active': group.visibility === visibility }"
-                                                            @click="handleVisibilitySelection(group, visibility)">
-                                                            <span>{{ formatVisibility(visibility) }}</span>
-                                                            <span
-                                                                v-if="group.visibility === visibility"
-                                                                class="group-visibility-menu__check"
-                                                                >✔</span
-                                                            >
-                                                        </button>
-                                                    </div>
-                                                    <template #reference>
-                                                        <button
-                                                            type="button"
-                                                            class="favorites-group-menu__item favorites-group-menu__item--submenu">
-                                                            <span>{{ t('view.favorite.visibility_tooltip') }}</span>
-                                                            <span class="favorites-group-menu__arrow">›</span>
-                                                        </button>
-                                                    </template>
-                                                </el-popover>
-                                                <button
-                                                    type="button"
-                                                    class="favorites-group-menu__item favorites-group-menu__item--danger"
-                                                    @click="handleRemoteClear(group)">
-                                                    <span>{{ t('view.favorite.clear') }}</span>
-                                                </button>
-                                            </div>
-                                        </el-popover>
+                                            ">
+                                            <PopoverTrigger asChild>
+                                                <Button class="rounded-full" variant="ghost" size="icon-sm" @click.stop>
+                                                    <MoreFilled />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent side="right" class="w-50 p-1 rounded-lg">
+                                                <div class="favorites-group-menu">
+                                                    <button
+                                                        type="button"
+                                                        class="favorites-group-menu__item"
+                                                        @click="handleRemoteRename(group)">
+                                                        <span>{{ t('view.favorite.rename_tooltip') }}</span>
+                                                    </button>
+                                                    <el-popover
+                                                        placement="right-start"
+                                                        trigger="hover"
+                                                        :width="200"
+                                                        popper-style="padding: 4px; border-radius: 8px;">
+                                                        <div class="group-visibility-menu">
+                                                            <button
+                                                                v-for="visibility in worldGroupVisibilityOptions"
+                                                                :key="visibility"
+                                                                type="button"
+                                                                class="group-visibility-menu__item"
+                                                                :class="{
+                                                                    'is-active': group.visibility === visibility
+                                                                }"
+                                                                @click="handleVisibilitySelection(group, visibility)">
+                                                                <span>{{ formatVisibility(visibility) }}</span>
+                                                                <span
+                                                                    v-if="group.visibility === visibility"
+                                                                    class="group-visibility-menu__check"
+                                                                    >✔</span
+                                                                >
+                                                            </button>
+                                                        </div>
+                                                        <template #reference>
+                                                            <button
+                                                                type="button"
+                                                                class="favorites-group-menu__item favorites-group-menu__item--submenu">
+                                                                <span>{{ t('view.favorite.visibility_tooltip') }}</span>
+                                                                <span class="favorites-group-menu__arrow">›</span>
+                                                            </button>
+                                                        </template>
+                                                    </el-popover>
+                                                    <button
+                                                        type="button"
+                                                        class="favorites-group-menu__item favorites-group-menu__item--danger"
+                                                        @click="handleRemoteClear(group)">
+                                                        <span>{{ t('view.favorite.clear') }}</span>
+                                                    </button>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
                                 </div>
                             </template>
@@ -187,16 +204,18 @@
                     <div class="group-section">
                         <div class="group-section__header">
                             <span>{{ t('view.favorite.worlds.local_favorites') }}</span>
-                            <el-button
+                            <Button
+                                class="rounded-full"
+                                size="icon-sm"
+                                variant="outline"
                                 v-if="!refreshingLocalFavorites"
-                                size="small"
                                 @click.stop="refreshLocalWorldFavorites"
-                                :icon="Refresh"
-                                circle />
-                            <el-button v-else size="small" text @click.stop="cancelLocalWorldRefresh">
-                                <el-icon class="is-loading"><Loading /></el-icon>
+                                ><RefreshCcw
+                            /></Button>
+                            <Button size="icon-sm" variant="ghost" v-else @click.stop="cancelLocalWorldRefresh">
+                                <RefreshCcw />
                                 {{ t('view.favorite.worlds.cancel_refresh') }}
-                            </el-button>
+                            </Button>
                         </div>
                         <div class="group-section__list">
                             <template v-if="localWorldFavoriteGroups.length">
@@ -213,39 +232,37 @@
                                         <div class="group-item__right">
                                             <span class="group-item__count">{{ localWorldFavGroupLength(group) }}</span>
                                             <div class="group-item__bottom">
-                                                <el-popover
-                                                    :visible="activeGroupMenu === localGroupMenuKey(group)"
-                                                    @update:visible="
+                                                <Popover
+                                                    :open="activeGroupMenu === localGroupMenuKey(group)"
+                                                    @update:open="
                                                         handleGroupMenuVisible(localGroupMenuKey(group), $event)
-                                                    "
-                                                    placement="right"
-                                                    trigger="click"
-                                                    :hide-after="0"
-                                                    :width="200"
-                                                    popper-style="padding: 4px; border-radius: 8px;">
-                                                    <template #reference>
-                                                        <el-button
-                                                            text
-                                                            size="small"
-                                                            :icon="MoreFilled"
-                                                            circle
-                                                            @click.stop></el-button>
-                                                    </template>
-                                                    <div class="favorites-group-menu">
-                                                        <button
-                                                            type="button"
-                                                            class="favorites-group-menu__item"
-                                                            @click="handleLocalRename(group)">
-                                                            <span>{{ t('view.favorite.rename_tooltip') }}</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            class="favorites-group-menu__item favorites-group-menu__item--danger"
-                                                            @click="handleLocalDelete(group)">
-                                                            <span>{{ t('view.favorite.delete_tooltip') }}</span>
-                                                        </button>
-                                                    </div>
-                                                </el-popover>
+                                                    ">
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            class="rounded-full"
+                                                            size="icon-sm"
+                                                            variant="ghost"
+                                                            @click.stop
+                                                            ><Ellipsis
+                                                        /></Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent side="right" class="w-50 p-1 rounded-lg">
+                                                        <div class="favorites-group-menu">
+                                                            <button
+                                                                type="button"
+                                                                class="favorites-group-menu__item"
+                                                                @click="handleLocalRename(group)">
+                                                                <span>{{ t('view.favorite.rename_tooltip') }}</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                class="favorites-group-menu__item favorites-group-menu__item--danger"
+                                                                @click="handleLocalDelete(group)">
+                                                                <span>{{ t('view.favorite.delete_tooltip') }}</span>
+                                                            </button>
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
                                             </div>
                                         </div>
                                     </div>
@@ -259,11 +276,11 @@
                                 <el-icon><Plus /></el-icon>
                                 <span>{{ t('view.favorite.worlds.new_group') }}</span>
                             </div>
-                            <el-input
+                            <InputGroupField
                                 v-else
                                 ref="newLocalGroupInput"
                                 v-model="newLocalGroupName"
-                                size="small"
+                                size="sm"
                                 class="group-item__input"
                                 :placeholder="t('view.favorite.worlds.new_group')"
                                 @keyup.enter="handleLocalGroupCreationConfirm"
@@ -272,8 +289,9 @@
                         </div>
                     </div>
                 </div>
-            </el-splitter-panel>
-            <el-splitter-panel>
+            </ResizablePanel>
+            <ResizableHandle with-handle @dragging="setWorldSplitterDragging" />
+            <ResizablePanel :order="2">
                 <div class="favorites-content">
                     <div class="favorites-content__header">
                         <div class="favorites-content__title">
@@ -293,30 +311,39 @@
                         </div>
                         <div class="favorites-content__edit">
                             <span>{{ t('view.favorite.edit_mode') }}</span>
-                            <el-switch v-model="worldEditMode" size="small" :disabled="isSearchActive"></el-switch>
+                            <Switch v-model="worldEditMode" :disabled="isSearchActive" />
                         </div>
                     </div>
                     <div class="favorites-content__edit-actions">
                         <div v-if="worldEditMode && !isSearchActive" class="favorites-content__actions">
-                            <el-button size="small" @click="toggleSelectAllWorlds">
+                            <Button size="sm" variant="outline" @click="toggleSelectAllWorlds">
                                 {{
                                     isAllWorldsSelected
                                         ? t('view.favorite.deselect_all')
                                         : t('view.favorite.select_all')
                                 }}
-                            </el-button>
-                            <el-button size="small" :disabled="!hasWorldSelection" @click="clearSelectedWorlds">
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                :disabled="!hasWorldSelection"
+                                @click="clearSelectedWorlds">
                                 {{ t('view.favorite.clear') }}
-                            </el-button>
-                            <el-button size="small" :disabled="!hasWorldSelection" @click="copySelectedWorlds">
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                :disabled="!hasWorldSelection"
+                                @click="copySelectedWorlds">
                                 {{ t('view.favorite.copy') }}
-                            </el-button>
-                            <el-button
-                                size="small"
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
                                 :disabled="!hasWorldSelection"
                                 @click="showWorldBulkUnfavoriteSelectionConfirm">
                                 {{ t('view.favorite.bulk_unfavorite') }}
-                            </el-button>
+                            </Button>
                         </div>
                     </div>
                     <div ref="worldFavoritesContainerRef" class="favorites-content__list">
@@ -401,21 +428,46 @@
                         </template>
                     </div>
                 </div>
-            </el-splitter-panel>
-        </el-splitter>
+            </ResizablePanel>
+        </ResizablePanelGroup>
         <WorldExportDialog v-model:worldExportDialogVisible="worldExportDialogVisible" />
     </div>
 </template>
 
 <script setup>
     import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { Loading, MoreFilled, Plus, Refresh } from '@element-plus/icons-vue';
-    import { ElMessage, ElMessageBox } from 'element-plus';
+    import { MoreFilled, Plus, Refresh } from '@element-plus/icons-vue';
+    import { Ellipsis, RefreshCcw } from 'lucide-vue-next';
+    import { InputGroupField, InputGroupSearch } from '@/components/ui/input-group';
+    import { Button } from '@/components/ui/button';
+    import { ElMessageBox } from 'element-plus';
+    import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import { useAppearanceSettingsStore, useFavoriteStore, useWorldStore } from '../../stores';
+    import {
+        Select,
+        SelectContent,
+        SelectGroup,
+        SelectItem,
+        SelectTrigger,
+        SelectValue
+    } from '../../components/ui/select';
+    import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuItem,
+        DropdownMenuSeparator,
+        DropdownMenuTrigger
+    } from '../../components/ui/dropdown-menu';
+    import { useAppearanceSettingsStore, useFavoriteStore, useModalStore, useWorldStore } from '../../stores';
+    import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
+    import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../components/ui/resizable';
     import { favoriteRequest, worldRequest } from '../../api';
+    import { Badge } from '../../components/ui/badge';
+    import { Slider } from '../../components/ui/slider';
+    import { Switch } from '../../components/ui/switch';
     import { useFavoritesCardScaling } from './composables/useFavoritesCardScaling.js';
 
     import FavoritesWorldItem from './components/FavoritesWorldItem.vue';
@@ -438,6 +490,7 @@
     const { sortFavorites } = storeToRefs(useAppearanceSettingsStore());
     const { setSortFavorites } = useAppearanceSettingsStore();
     const favoriteStore = useFavoriteStore();
+    const modalStore = useModalStore();
     const {
         favoriteWorlds,
         favoriteWorldGroups,
@@ -488,9 +541,33 @@
 
     const worldCardScalePercent = computed(() => Math.round(worldCardScale.value * 100));
     const worldCardSpacingPercent = computed(() => Math.round(worldCardSpacing.value * 100));
+    const worldCardScaleValue = computed({
+        get: () => [worldCardScale.value],
+        set: (value) => {
+            const next = value?.[0];
+            if (typeof next === 'number') {
+                worldCardScale.value = next;
+            }
+        }
+    });
+    const worldCardSpacingValue = computed({
+        get: () => [worldCardSpacing.value],
+        set: (value) => {
+            const next = value?.[0];
+            if (typeof next === 'number') {
+                worldCardSpacing.value = next;
+            }
+        }
+    });
 
     const worldGroupVisibilityOptions = ref(['public', 'friends', 'private']);
     const worldSplitterSize = ref(260);
+    const worldSplitterFallbackWidth = typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 1200;
+    const worldSplitterGroupRef = ref(null);
+    const worldSplitterPanelRef = ref(null);
+    const worldSplitterWidth = ref(worldSplitterFallbackWidth);
+    const worldSplitterDraggingCount = ref(0);
+    let worldSplitterObserver = null;
     const worldExportDialogVisible = ref(false);
     const worldFavoriteSearch = ref('');
     const worldFavoriteSearchResults = ref([]);
@@ -508,7 +585,7 @@
     const worldEditMode = ref(false);
     const activeGroupMenu = ref(null);
     const localFavoritesScrollbarRef = ref(null);
-    const worldToolbarMenuRef = ref();
+    const worldToolbarMenuOpen = ref(false);
     const localFavoritesLoadingMore = ref(false);
     const hasWorldSelection = computed(() => selectedFavoriteWorlds.value.length > 0);
     const hasSearchInput = computed(() => worldFavoriteSearch.value.trim().length > 0);
@@ -519,7 +596,7 @@
     const localGroupMenuKey = (key) => `local:${key}`;
 
     const closeWorldToolbarMenu = () => {
-        worldToolbarMenuRef.value?.handleClose?.();
+        worldToolbarMenuOpen.value = false;
     };
 
     function handleWorldImportClick() {
@@ -538,22 +615,106 @@
 
     async function loadWorldSplitterPreferences() {
         const storedSize = await configRepository.getString('VRCX_FavoritesWorldSplitter', '260');
-        if (typeof storedSize === 'string' && !Number.isNaN(Number(storedSize)) && Number(storedSize) > 0) {
-            worldSplitterSize.value = Number(storedSize);
+        const parsedSize = Number(storedSize);
+        if (Number.isFinite(parsedSize) && parsedSize >= 0) {
+            worldSplitterSize.value = parsedSize;
         }
     }
 
-    function handleWorldSplitterResize(panelIndex, sizes) {
+    const getWorldSplitterWidthRaw = () => {
+        const element = worldSplitterGroupRef.value?.$el ?? worldSplitterGroupRef.value;
+        const width = element?.getBoundingClientRect?.().width;
+        return Number.isFinite(width) ? width : null;
+    };
+
+    const getWorldSplitterWidth = () => {
+        const width = getWorldSplitterWidthRaw();
+        return Number.isFinite(width) && width > 0 ? width : worldSplitterFallbackWidth;
+    };
+
+    const resolveDraggingPayload = (payload) => {
+        if (typeof payload === 'boolean') {
+            return payload;
+        }
+        if (payload && typeof payload === 'object') {
+            if (typeof payload.detail === 'boolean') {
+                return payload.detail;
+            }
+            if (typeof payload.dragging === 'boolean') {
+                return payload.dragging;
+            }
+        }
+        return Boolean(payload);
+    };
+
+    const setWorldSplitterDragging = (payload) => {
+        const isDragging = resolveDraggingPayload(payload);
+        const next = worldSplitterDraggingCount.value + (isDragging ? 1 : -1);
+        worldSplitterDraggingCount.value = Math.max(0, next);
+    };
+
+    const pxToPercent = (px, groupWidth, min = 0) => {
+        const width = groupWidth ?? getWorldSplitterWidth();
+        return Math.min(100, Math.max(min, (px / width) * 100));
+    };
+
+    const percentToPx = (percent, groupWidth) => (percent / 100) * groupWidth;
+
+    const worldSplitterDefaultSize = computed(() => pxToPercent(worldSplitterSize.value, worldSplitterWidth.value, 0));
+    const worldSplitterMinSize = computed(() => pxToPercent(0, worldSplitterWidth.value, 0));
+    const worldSplitterMaxSize = computed(() => pxToPercent(360, worldSplitterWidth.value, 0));
+
+    const handleWorldSplitterLayout = (sizes) => {
         if (!Array.isArray(sizes) || !sizes.length) {
             return;
         }
-        const nextSize = sizes[0];
-        if (nextSize <= 0) {
+
+        if (worldSplitterDraggingCount.value === 0) {
             return;
         }
-        worldSplitterSize.value = nextSize;
-        configRepository.setString('VRCX_FavoritesWorldSplitter', nextSize.toString());
-    }
+
+        const rawWidth = getWorldSplitterWidthRaw();
+        if (!Number.isFinite(rawWidth) || rawWidth <= 0) {
+            return;
+        }
+
+        const nextSize = sizes[0];
+        if (!Number.isFinite(nextSize)) {
+            return;
+        }
+
+        const nextPx = Math.round(percentToPx(nextSize, rawWidth));
+        const clampedPx = Math.min(360, Math.max(0, nextPx));
+        worldSplitterSize.value = clampedPx;
+        configRepository.setString('VRCX_FavoritesWorldSplitter', clampedPx.toString());
+    };
+
+    const updateWorldSplitterWidth = () => {
+        const width = getWorldSplitterWidth();
+        worldSplitterWidth.value = width;
+        const targetSize = pxToPercent(worldSplitterSize.value, width, 0);
+        worldSplitterPanelRef.value?.resize?.(targetSize);
+    };
+
+    onMounted(async () => {
+        await nextTick();
+        updateWorldSplitterWidth();
+        const element = worldSplitterGroupRef.value?.$el ?? worldSplitterGroupRef.value;
+        if (element && typeof ResizeObserver !== 'undefined') {
+            worldSplitterObserver = new ResizeObserver(updateWorldSplitterWidth);
+            worldSplitterObserver.observe(element);
+        }
+    });
+
+    watch(worldSplitterSize, (value, previous) => {
+        if (value === previous) {
+            return;
+        }
+        if (worldSplitterDraggingCount.value > 0) {
+            return;
+        }
+        updateWorldSplitterWidth();
+    });
 
     const groupedWorldFavorites = computed(() => {
         const grouped = {};
@@ -636,14 +797,12 @@
         return sliceLocalWorldFavorites.value(activeLocalGroupName.value);
     });
 
-    const sortFav = computed({
-        get() {
-            return sortFavorites.value;
-        },
-        set() {
+    function handleSortFavoritesChange(value) {
+        const next = Boolean(value);
+        if (next !== sortFavorites.value) {
             setSortFavorites();
         }
-    });
+    }
 
     const isAllWorldsSelected = computed(() => {
         if (!activeRemoteGroup.value || !currentRemoteFavorites.value.length) {
@@ -896,21 +1055,13 @@
             return;
         }
         const total = selectedFavoriteWorlds.value.length;
-        ElMessageBox.confirm(
-            `Are you sure you want to unfavorite ${total} favorites?
+        modalStore
+            .confirm({
+                description: `Are you sure you want to unfavorite ${total} favorites?
             This action cannot be undone.`,
-            `Delete ${total} favorites?`,
-            {
-                confirmButtonText: 'Confirm',
-                cancelButtonText: 'Cancel',
-                type: 'info'
-            }
-        )
-            .then((action) => {
-                if (action === 'confirm') {
-                    bulkUnfavoriteSelectedWorlds([...selectedFavoriteWorlds.value]);
-                }
+                title: `Delete ${total} favorites?`
             })
+            .then(() => bulkUnfavoriteSelectedWorlds([...selectedFavoriteWorlds.value]))
             .catch(() => {});
     }
 
@@ -968,20 +1119,10 @@
         getLocalWorldFavorites();
     }
 
-    function userFavoriteWorldsStatusForFavTab(visibility) {
-        if (visibility === 'public') {
-            return 'primary';
-        }
-        if (visibility === 'friends') {
-            return 'success';
-        }
-        return 'info';
-    }
-
-    function changeWorldGroupVisibility(name, visibility, menuKey = null) {
+    function changeWorldGroupVisibility(group, visibility, menuKey = null) {
         const params = {
-            type: 'world',
-            group: name,
+            type: group.type,
+            group: group.name,
             visibility
         };
         favoriteRequest.saveFavoriteGroup(params).then((args) => {
@@ -991,10 +1132,7 @@
                     favoriteGroupId: args.json.id
                 }
             });
-            ElMessage({
-                message: 'Group visibility changed',
-                type: 'success'
-            });
+            toast.success('Group visibility changed');
             if (menuKey) {
                 handleGroupMenuVisible(menuKey, false);
             }
@@ -1030,32 +1168,26 @@
     }
 
     function promptLocalWorldFavoriteGroupDelete(group) {
-        ElMessageBox.confirm(`Delete Group? ${group}`, 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then((action) => {
-                if (action === 'confirm') {
-                    deleteLocalWorldFavoriteGroup(group);
-                }
+        modalStore
+            .confirm({
+                description: `Delete Group? ${group}`,
+                title: 'Confirm'
             })
+            .then(() => deleteLocalWorldFavoriteGroup(group))
             .catch(() => {});
     }
 
     function clearFavoriteGroup(ctx) {
-        ElMessageBox.confirm('Continue? Clear Group', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then((action) => {
-                if (action === 'confirm') {
-                    favoriteRequest.clearFavoriteGroup({
-                        type: ctx.type,
-                        group: ctx.name
-                    });
-                }
+        modalStore
+            .confirm({
+                description: 'Continue? Clear Group',
+                title: 'Confirm'
+            })
+            .then(() => {
+                favoriteRequest.clearFavoriteGroup({
+                    type: ctx.type,
+                    group: ctx.name
+                });
             })
             .catch(() => {});
     }
@@ -1078,7 +1210,7 @@
 
     function handleVisibilitySelection(group, visibility) {
         const menuKey = remoteGroupMenuKey(group.key);
-        changeWorldGroupVisibility(group.name, visibility, menuKey);
+        changeWorldGroupVisibility(group, visibility, menuKey);
     }
 
     function handleRemoteRename(group) {
@@ -1122,7 +1254,7 @@
                 }
                 favoriteRequest
                     .saveFavoriteGroup({
-                        type: 'world',
+                        type: group.type,
                         group: group.name,
                         displayName: newName
                     })
@@ -1133,10 +1265,7 @@
                                 favoriteGroupId: args.json.id
                             }
                         });
-                        ElMessage({
-                            message: t('prompt.change_favorite_group_name.message.success'),
-                            type: 'success'
-                        });
+                        toast.success(t('prompt.change_favorite_group_name.message.success'));
                         refreshFavorites();
                     });
             })
@@ -1209,6 +1338,10 @@
         cancelLocalWorldRefresh();
         if (typeof window !== 'undefined') {
             window.removeEventListener('resize', maybeFillLocalFavoritesViewport);
+        }
+        if (worldSplitterObserver) {
+            worldSplitterObserver.disconnect();
+            worldSplitterObserver = null;
         }
     });
 </script>
@@ -1680,7 +1813,7 @@
         margin-right: var(--favorites-card-checkbox-margin, 10px);
     }
 
-    :deep(.favorites-search-card__action--checkbox .el-checkbox) {
+    :deep(.favorites-search-card__action--checkbox [data-slot='checkbox']) {
         margin: 0;
     }
 

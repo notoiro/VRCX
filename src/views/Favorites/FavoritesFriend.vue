@@ -2,80 +2,104 @@
     <div class="favorites-page x-container" v-loading="isFavoriteLoading">
         <div class="favorites-toolbar">
             <div>
-                <el-select v-model="sortFav" class="favorites-toolbar__select">
-                    <template #prefix>
-                        <i class="ri-sort-asc"></i>
-                    </template>
-                    <el-option :label="t('view.settings.appearance.appearance.sort_favorite_by_name')" :value="false" />
-                    <el-option :label="t('view.settings.appearance.appearance.sort_favorite_by_date')" :value="true" />
-                </el-select>
+                <Select :model-value="sortFavorites" @update:modelValue="handleSortFavoritesChange">
+                    <SelectTrigger size="sm" class="favorites-toolbar__select">
+                        <span class="flex items-center gap-2">
+                            <i class="ri-sort-asc"></i>
+                            <SelectValue
+                                :placeholder="t('view.settings.appearance.appearance.sort_favorite_by_name')" />
+                        </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            <SelectItem
+                                :value="false"
+                                :text-value="t('view.settings.appearance.appearance.sort_favorite_by_name')">
+                                {{ t('view.settings.appearance.appearance.sort_favorite_by_name') }}
+                            </SelectItem>
+                            <SelectItem
+                                :value="true"
+                                :text-value="t('view.settings.appearance.appearance.sort_favorite_by_date')">
+                                {{ t('view.settings.appearance.appearance.sort_favorite_by_date') }}
+                            </SelectItem>
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
             </div>
             <div class="favorites-toolbar__right">
-                <el-input
+                <InputGroupSearch
                     v-model="friendFavoriteSearch"
-                    clearable
                     class="favorites-toolbar__search"
                     :placeholder="t('view.favorite.worlds.search')"
                     @input="searchFriendFavorites" />
-                <el-dropdown ref="friendToolbarMenuRef" trigger="click" :hide-on-click="false">
-                    <el-button :icon="MoreFilled" size="small" circle @click.stop />
-                    <template #dropdown>
-                        <el-dropdown-menu class="favorites-dropdown">
-                            <li class="favorites-dropdown__control" @click.stop>
-                                <div class="favorites-dropdown__control-header">
-                                    <span>Scale</span>
-                                    <span class="favorites-dropdown__control-value">
-                                        {{ friendCardScalePercent }}%
-                                    </span>
-                                </div>
-                                <el-slider
-                                    v-model="friendCardScale"
-                                    class="favorites-dropdown__slider"
-                                    :min="friendCardScaleSlider.min"
-                                    :max="friendCardScaleSlider.max"
-                                    :step="friendCardScaleSlider.step"
-                                    :show-tooltip="false" />
-                            </li>
-                            <li class="favorites-dropdown__control" @click.stop>
-                                <div class="favorites-dropdown__control-header">
-                                    <span>Spacing</span>
-                                    <span class="favorites-dropdown__control-value">
-                                        {{ friendCardSpacingPercent }}%
-                                    </span>
-                                </div>
-                                <el-slider
-                                    v-model="friendCardSpacing"
-                                    class="favorites-dropdown__slider"
-                                    :min="friendCardSpacingSlider.min"
-                                    :max="friendCardSpacingSlider.max"
-                                    :step="friendCardSpacingSlider.step"
-                                    :show-tooltip="false" />
-                            </li>
-                            <el-dropdown-item @click="handleFriendImportClick">
-                                {{ t('view.favorite.import') }}
-                            </el-dropdown-item>
-                            <el-dropdown-item divided @click="handleFriendExportClick">
-                                {{ t('view.favorite.export') }}
-                            </el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
+                <DropdownMenu v-model:open="friendToolbarMenuOpen">
+                    <DropdownMenuTrigger as-child>
+                        <Button class="rounded-full" size="icon-sm" variant="ghost"><Ellipsis /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent class="favorites-dropdown">
+                        <li class="favorites-dropdown__control" @click.stop>
+                            <div class="favorites-dropdown__control-header">
+                                <span>Scale</span>
+                                <span class="favorites-dropdown__control-value"> {{ friendCardScalePercent }}% </span>
+                            </div>
+                            <Slider
+                                v-model="friendCardScaleValue"
+                                class="favorites-dropdown__slider"
+                                :min="friendCardScaleSlider.min"
+                                :max="friendCardScaleSlider.max"
+                                :step="friendCardScaleSlider.step" />
+                        </li>
+                        <li class="favorites-dropdown__control" @click.stop>
+                            <div class="favorites-dropdown__control-header">
+                                <span>Spacing</span>
+                                <span class="favorites-dropdown__control-value"> {{ friendCardSpacingPercent }}% </span>
+                            </div>
+                            <Slider
+                                v-model="friendCardSpacingValue"
+                                class="favorites-dropdown__slider"
+                                :min="friendCardSpacingSlider.min"
+                                :max="friendCardSpacingSlider.max"
+                                :step="friendCardSpacingSlider.step" />
+                        </li>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem @click="handleFriendImportClick">
+                            {{ t('view.favorite.import') }}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem @click="handleFriendExportClick">
+                            {{ t('view.favorite.export') }}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </div>
-        <el-splitter class="favorites-splitter" @resize-end="handleFriendSplitterResize">
-            <el-splitter-panel :size="friendSplitterSize" :min="0" :max="360" collapsible>
+        <ResizablePanelGroup
+            ref="friendSplitterGroupRef"
+            direction="horizontal"
+            class="favorites-splitter"
+            @layout="handleFriendSplitterLayout">
+            <ResizablePanel
+                ref="friendSplitterPanelRef"
+                :default-size="friendSplitterDefaultSize"
+                :min-size="friendSplitterMinSize"
+                :max-size="friendSplitterMaxSize"
+                :collapsed-size="0"
+                collapsible
+                :order="1">
                 <div class="favorites-groups-panel">
                     <div class="group-section">
                         <div class="group-section__header">
                             <span>{{ t('view.favorite.worlds.vrchat_favorites') }}</span>
-                            <el-tooltip placement="bottom" :content="t('view.favorite.refresh_favorites_tooltip')">
-                                <el-button
-                                    :loading="isFavoriteLoading"
-                                    size="small"
-                                    :icon="Refresh"
-                                    circle
-                                    @click.stop="handleRefreshFavorites" />
-                            </el-tooltip>
+                            <TooltipWrapper side="bottom" :content="t('view.favorite.refresh_favorites_tooltip')">
+                                <Button
+                                    class="rounded-full"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    :disabled="isFavoriteLoading"
+                                    @click.stop="handleRefreshFavorites">
+                                    <Spinner v-if="isFavoriteLoading" />
+                                    <Refresh v-else />
+                                </Button>
+                            </TooltipWrapper>
                         </div>
                         <div class="group-section__list">
                             <template v-if="favoriteFriendGroups.length">
@@ -92,77 +116,68 @@
                                         <span class="group-item__count">{{ group.count }}/{{ group.capacity }}</span>
                                     </div>
                                     <div class="group-item__bottom">
-                                        <el-tag
-                                            size="small"
-                                            effect="plain"
-                                            :type="userFavoriteFriendsStatusForFavTab(group.visibility)">
+                                        <Badge variant="outline">
                                             {{ formatVisibility(group.visibility) }}
-                                        </el-tag>
-                                        <el-popover
-                                            :visible="activeGroupMenu === remoteGroupMenuKey(group.key)"
-                                            @update:visible="
+                                        </Badge>
+                                        <Popover
+                                            :open="activeGroupMenu === remoteGroupMenuKey(group.key)"
+                                            @update:open="
                                                 handleGroupMenuVisible(remoteGroupMenuKey(group.key), $event)
-                                            "
-                                            placement="right"
-                                            trigger="click"
-                                            :hide-after="0"
-                                            :width="220"
-                                            popper-style="padding: 4px; border-radius: 8px;">
-                                            <template #reference>
-                                                <el-button
-                                                    text
-                                                    size="small"
-                                                    :icon="MoreFilled"
-                                                    circle
-                                                    @click.stop></el-button>
-                                            </template>
-                                            <div class="favorites-group-menu">
-                                                <button
-                                                    type="button"
-                                                    class="favorites-group-menu__item"
-                                                    @click="handleRemoteRename(group)">
-                                                    <span>{{ t('view.favorite.rename_tooltip') }}</span>
-                                                </button>
-                                                <el-popover
-                                                    placement="right"
-                                                    trigger="hover"
-                                                    :width="180"
-                                                    popper-style="padding: 4px; border-radius: 8px;">
-                                                    <div class="group-visibility-menu">
-                                                        <button
-                                                            v-for="visibility in friendGroupVisibilityOptions"
-                                                            :key="visibility"
-                                                            type="button"
-                                                            :class="[
-                                                                'group-visibility-menu__item',
-                                                                { 'is-active': group.visibility === visibility }
-                                                            ]"
-                                                            @click="handleVisibilitySelection(group, visibility)">
-                                                            <span>{{ formatVisibility(visibility) }}</span>
-                                                            <span
-                                                                v-if="group.visibility === visibility"
-                                                                class="group-visibility-menu__check">
-                                                                <i class="ri-check-line"></i>
-                                                            </span>
-                                                        </button>
-                                                    </div>
-                                                    <template #reference>
-                                                        <button
-                                                            type="button"
-                                                            class="favorites-group-menu__item favorites-group-menu__item--submenu">
-                                                            <span>{{ t('view.favorite.visibility_tooltip') }}</span>
-                                                            <span class="favorites-group-menu__arrow">›</span>
-                                                        </button>
-                                                    </template>
-                                                </el-popover>
-                                                <button
-                                                    type="button"
-                                                    class="favorites-group-menu__item favorites-group-menu__item--danger"
-                                                    @click="handleRemoteClear(group)">
-                                                    <span>{{ t('view.favorite.clear') }}</span>
-                                                </button>
-                                            </div>
-                                        </el-popover>
+                                            ">
+                                            <PopoverTrigger asChild>
+                                                <Button class="rounded-full" variant="ghost" size="icon-sm" @click.stop>
+                                                    <MoreFilled />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent side="right" class="w-55 p-1 rounded-lg">
+                                                <div class="favorites-group-menu">
+                                                    <button
+                                                        type="button"
+                                                        class="favorites-group-menu__item"
+                                                        @click="handleRemoteRename(group)">
+                                                        <span>{{ t('view.favorite.rename_tooltip') }}</span>
+                                                    </button>
+                                                    <el-popover
+                                                        placement="right"
+                                                        trigger="hover"
+                                                        :width="180"
+                                                        popper-style="padding: 4px; border-radius: 8px;">
+                                                        <div class="group-visibility-menu">
+                                                            <button
+                                                                v-for="visibility in friendGroupVisibilityOptions"
+                                                                :key="visibility"
+                                                                type="button"
+                                                                :class="[
+                                                                    'group-visibility-menu__item',
+                                                                    { 'is-active': group.visibility === visibility }
+                                                                ]"
+                                                                @click="handleVisibilitySelection(group, visibility)">
+                                                                <span>{{ formatVisibility(visibility) }}</span>
+                                                                <span
+                                                                    v-if="group.visibility === visibility"
+                                                                    class="group-visibility-menu__check">
+                                                                    <i class="ri-check-line"></i>
+                                                                </span>
+                                                            </button>
+                                                        </div>
+                                                        <template #reference>
+                                                            <button
+                                                                type="button"
+                                                                class="favorites-group-menu__item favorites-group-menu__item--submenu">
+                                                                <span>{{ t('view.favorite.visibility_tooltip') }}</span>
+                                                                <span class="favorites-group-menu__arrow">›</span>
+                                                            </button>
+                                                        </template>
+                                                    </el-popover>
+                                                    <button
+                                                        type="button"
+                                                        class="favorites-group-menu__item favorites-group-menu__item--danger"
+                                                        @click="handleRemoteClear(group)">
+                                                        <span>{{ t('view.favorite.clear') }}</span>
+                                                    </button>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
                                 </div>
                             </template>
@@ -170,8 +185,9 @@
                         </div>
                     </div>
                 </div>
-            </el-splitter-panel>
-            <el-splitter-panel>
+            </ResizablePanel>
+            <ResizableHandle with-handle @dragging="setFriendSplitterDragging" />
+            <ResizablePanel :order="2">
                 <div class="favorites-content">
                     <div class="favorites-content__header">
                         <div class="favorites-content__title">
@@ -186,33 +202,39 @@
                         </div>
                         <div class="favorites-content__edit">
                             <span>{{ t('view.favorite.edit_mode') }}</span>
-                            <el-switch
-                                v-model="friendEditMode"
-                                size="small"
-                                :disabled="isSearchActive || !activeRemoteGroup"></el-switch>
+                            <Switch v-model="friendEditMode" :disabled="isSearchActive || !activeRemoteGroup" />
                         </div>
                     </div>
                     <div class="favorites-content__edit-actions">
                         <div v-if="friendEditMode && !isSearchActive" class="favorites-content__actions">
-                            <el-button size="small" @click="toggleSelectAllFriends">
+                            <Button size="sm" variant="outline" @click="toggleSelectAllFriends">
                                 {{
                                     isAllFriendsSelected
                                         ? t('view.favorite.deselect_all')
                                         : t('view.favorite.select_all')
                                 }}
-                            </el-button>
-                            <el-button size="small" :disabled="!hasFriendSelection" @click="clearSelectedFriends">
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                :disabled="!hasFriendSelection"
+                                @click="clearSelectedFriends">
                                 {{ t('view.favorite.clear') }}
-                            </el-button>
-                            <el-button size="small" :disabled="!hasFriendSelection" @click="copySelectedFriends">
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                :disabled="!hasFriendSelection"
+                                @click="copySelectedFriends">
                                 {{ t('view.favorite.copy') }}
-                            </el-button>
-                            <el-button
-                                size="small"
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
                                 :disabled="!hasFriendSelection"
                                 @click="showFriendBulkUnfavoriteSelectionConfirm">
                                 {{ t('view.favorite.bulk_unfavorite') }}
-                            </el-button>
+                            </Button>
                         </div>
                     </div>
                     <div ref="friendFavoritesContainerRef" class="favorites-content__list">
@@ -276,20 +298,45 @@
                         </template>
                     </div>
                 </div>
-            </el-splitter-panel>
-        </el-splitter>
+            </ResizablePanel>
+        </ResizablePanelGroup>
         <FriendExportDialog v-model:friendExportDialogVisible="friendExportDialogVisible" />
     </div>
 </template>
 
 <script setup>
-    import { computed, onBeforeMount, ref, watch } from 'vue';
-    import { ElMessage, ElMessageBox } from 'element-plus';
+    import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, watch } from 'vue';
     import { MoreFilled, Refresh } from '@element-plus/icons-vue';
+    import { Button } from '@/components/ui/button';
+    import { ElMessageBox } from 'element-plus';
+    import { Ellipsis } from 'lucide-vue-next';
+    import { InputGroupSearch } from '@/components/ui/input-group';
+    import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import { useAppearanceSettingsStore, useFavoriteStore, useUserStore } from '../../stores';
+    import {
+        Select,
+        SelectContent,
+        SelectGroup,
+        SelectItem,
+        SelectTrigger,
+        SelectValue
+    } from '../../components/ui/select';
+    import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuItem,
+        DropdownMenuSeparator,
+        DropdownMenuTrigger
+    } from '../../components/ui/dropdown-menu';
+    import { useAppearanceSettingsStore, useFavoriteStore, useModalStore, useUserStore } from '../../stores';
+    import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
+    import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../components/ui/resizable';
+    import { Badge } from '../../components/ui/badge';
+    import { Slider } from '../../components/ui/slider';
+    import { Switch } from '../../components/ui/switch';
     import { favoriteRequest } from '../../api';
     import { useFavoritesCardScaling } from './composables/useFavoritesCardScaling.js';
     import { userImage } from '../../shared/utils';
@@ -301,10 +348,17 @@
     const friendGroupVisibilityOptions = ref(['public', 'friends', 'private']);
 
     const friendSplitterSize = ref(260);
+    const friendSplitterFallbackWidth = typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 1200;
+    const friendSplitterGroupRef = ref(null);
+    const friendSplitterPanelRef = ref(null);
+    const friendSplitterWidth = ref(friendSplitterFallbackWidth);
+    const friendSplitterDraggingCount = ref(0);
+    let friendSplitterObserver = null;
 
     const { sortFavorites } = storeToRefs(useAppearanceSettingsStore());
     const { setSortFavorites } = useAppearanceSettingsStore();
     const favoriteStore = useFavoriteStore();
+    const modalStore = useModalStore();
     const {
         favoriteFriends,
         favoriteFriendGroups,
@@ -344,6 +398,24 @@
 
     const friendCardScalePercent = computed(() => Math.round(friendCardScale.value * 100));
     const friendCardSpacingPercent = computed(() => Math.round(friendCardSpacing.value * 100));
+    const friendCardScaleValue = computed({
+        get: () => [friendCardScale.value],
+        set: (value) => {
+            const next = value?.[0];
+            if (typeof next === 'number') {
+                friendCardScale.value = next;
+            }
+        }
+    });
+    const friendCardSpacingValue = computed({
+        get: () => [friendCardSpacing.value],
+        set: (value) => {
+            const next = value?.[0];
+            if (typeof next === 'number') {
+                friendCardSpacing.value = next;
+            }
+        }
+    });
 
     const friendExportDialogVisible = ref(false);
     const friendFavoriteSearch = ref('');
@@ -351,16 +423,14 @@
     const friendEditMode = ref(false);
     const selectedGroup = ref(null);
     const activeGroupMenu = ref(null);
-    const friendToolbarMenuRef = ref();
+    const friendToolbarMenuOpen = ref(false);
 
-    const sortFav = computed({
-        get() {
-            return sortFavorites.value;
-        },
-        set() {
+    function handleSortFavoritesChange(value) {
+        const next = Boolean(value);
+        if (next !== sortFavorites.value) {
             setSortFavorites();
         }
-    });
+    }
 
     const hasFriendSelection = computed(() => selectedFavoriteFriends.value.length > 0);
     const hasSearchInput = computed(() => friendFavoriteSearch.value.trim().length > 0);
@@ -368,7 +438,7 @@
     const isRemoteGroupSelected = computed(() => selectedGroup.value?.type === 'remote');
 
     const closeFriendToolbarMenu = () => {
-        friendToolbarMenuRef.value?.handleClose?.();
+        friendToolbarMenuOpen.value = false;
     };
 
     function handleFriendImportClick() {
@@ -387,22 +457,115 @@
 
     async function loadFriendSplitterPreferences() {
         const storedSize = await configRepository.getString('VRCX_FavoritesFriendSplitter', '260');
-        if (typeof storedSize === 'string' && !Number.isNaN(Number(storedSize)) && Number(storedSize) > 0) {
-            friendSplitterSize.value = Number(storedSize);
+        const parsedSize = Number(storedSize);
+        if (Number.isFinite(parsedSize) && parsedSize >= 0) {
+            friendSplitterSize.value = parsedSize;
         }
     }
 
-    function handleFriendSplitterResize(panelIndex, sizes) {
+    const getFriendSplitterWidthRaw = () => {
+        const element = friendSplitterGroupRef.value?.$el ?? friendSplitterGroupRef.value;
+        const width = element?.getBoundingClientRect?.().width;
+        return Number.isFinite(width) ? width : null;
+    };
+
+    const getFriendSplitterWidth = () => {
+        const width = getFriendSplitterWidthRaw();
+        return Number.isFinite(width) && width > 0 ? width : friendSplitterFallbackWidth;
+    };
+
+    const resolveDraggingPayload = (payload) => {
+        if (typeof payload === 'boolean') {
+            return payload;
+        }
+        if (payload && typeof payload === 'object') {
+            if (typeof payload.detail === 'boolean') {
+                return payload.detail;
+            }
+            if (typeof payload.dragging === 'boolean') {
+                return payload.dragging;
+            }
+        }
+        return Boolean(payload);
+    };
+
+    const setFriendSplitterDragging = (payload) => {
+        const isDragging = resolveDraggingPayload(payload);
+        const next = friendSplitterDraggingCount.value + (isDragging ? 1 : -1);
+        friendSplitterDraggingCount.value = Math.max(0, next);
+    };
+
+    const pxToPercent = (px, groupWidth, min = 0) => {
+        const width = groupWidth ?? getFriendSplitterWidth();
+        return Math.min(100, Math.max(min, (px / width) * 100));
+    };
+
+    const percentToPx = (percent, groupWidth) => (percent / 100) * groupWidth;
+
+    const friendSplitterDefaultSize = computed(() =>
+        pxToPercent(friendSplitterSize.value, friendSplitterWidth.value, 0)
+    );
+    const friendSplitterMinSize = computed(() => pxToPercent(0, friendSplitterWidth.value, 0));
+    const friendSplitterMaxSize = computed(() => pxToPercent(360, friendSplitterWidth.value, 0));
+
+    const handleFriendSplitterLayout = (sizes) => {
         if (!Array.isArray(sizes) || !sizes.length) {
             return;
         }
-        const nextSize = sizes[0];
-        if (nextSize <= 0) {
+
+        if (friendSplitterDraggingCount.value === 0) {
             return;
         }
-        friendSplitterSize.value = nextSize;
-        configRepository.setString('VRCX_FavoritesFriendSplitter', nextSize.toString());
-    }
+
+        const rawWidth = getFriendSplitterWidthRaw();
+        if (!Number.isFinite(rawWidth) || rawWidth <= 0) {
+            return;
+        }
+
+        const nextSize = sizes[0];
+        if (!Number.isFinite(nextSize)) {
+            return;
+        }
+
+        const nextPx = Math.round(percentToPx(nextSize, rawWidth));
+        const clampedPx = Math.min(360, Math.max(0, nextPx));
+        friendSplitterSize.value = clampedPx;
+        configRepository.setString('VRCX_FavoritesFriendSplitter', clampedPx.toString());
+    };
+
+    const updateFriendSplitterWidth = () => {
+        const width = getFriendSplitterWidth();
+        friendSplitterWidth.value = width;
+        const targetSize = pxToPercent(friendSplitterSize.value, width, 0);
+        friendSplitterPanelRef.value?.resize?.(targetSize);
+    };
+
+    onMounted(async () => {
+        await nextTick();
+        updateFriendSplitterWidth();
+        const element = friendSplitterGroupRef.value?.$el ?? friendSplitterGroupRef.value;
+        if (element && typeof ResizeObserver !== 'undefined') {
+            friendSplitterObserver = new ResizeObserver(updateFriendSplitterWidth);
+            friendSplitterObserver.observe(element);
+        }
+    });
+
+    onUnmounted(() => {
+        if (friendSplitterObserver) {
+            friendSplitterObserver.disconnect();
+            friendSplitterObserver = null;
+        }
+    });
+
+    watch(friendSplitterSize, (value, previous) => {
+        if (value === previous) {
+            return;
+        }
+        if (friendSplitterDraggingCount.value > 0) {
+            return;
+        }
+        updateFriendSplitterWidth();
+    });
 
     const remoteGroupMenuKey = (key) => `remote:${key}`;
 
@@ -589,20 +752,12 @@
             return;
         }
         const total = selectedFavoriteFriends.value.length;
-        ElMessageBox.confirm(
-            `Are you sure you want to unfavorite ${total} favorites?\n            This action cannot be undone.`,
-            `Delete ${total} favorites?`,
-            {
-                confirmButtonText: 'Confirm',
-                cancelButtonText: 'Cancel',
-                type: 'info'
-            }
-        )
-            .then((action) => {
-                if (action === 'confirm') {
-                    bulkUnfavoriteSelectedFriends([...selectedFavoriteFriends.value]);
-                }
+        modalStore
+            .confirm({
+                description: `Are you sure you want to unfavorite ${total} favorites?\n            This action cannot be undone.`,
+                title: `Delete ${total} favorites?`
             })
+            .then(({ ok }) => ok && bulkUnfavoriteSelectedFriends([...selectedFavoriteFriends.value]))
             .catch(() => {});
     }
 
@@ -617,18 +772,16 @@
     }
 
     function clearFavoriteGroup(ctx) {
-        ElMessageBox.confirm('Continue? Clear Group', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then((action) => {
-                if (action === 'confirm') {
-                    favoriteRequest.clearFavoriteGroup({
-                        type: ctx.type,
-                        group: ctx.name
-                    });
-                }
+        modalStore
+            .confirm({
+                description: 'Continue? Clear Group',
+                title: 'Confirm'
+            })
+            .then(() => {
+                favoriteRequest.clearFavoriteGroup({
+                    type: ctx.type,
+                    group: ctx.name
+                });
             })
             .catch(() => {});
     }
@@ -680,10 +833,7 @@
                                 favoriteGroupId: args.json.id
                             }
                         });
-                        ElMessage({
-                            message: t('prompt.change_favorite_group_name.message.success'),
-                            type: 'success'
-                        });
+                        toast.success(t('prompt.change_favorite_group_name.message.success'));
                         refreshFavorites();
                     });
             })
@@ -703,26 +853,13 @@
                     favoriteGroupId: args.json.id
                 }
             });
-            ElMessage({
-                message: 'Group visibility changed',
-                type: 'success'
-            });
+            toast.success('Group visibility changed');
             if (menuKey) {
                 handleGroupMenuVisible(menuKey, false);
             }
             refreshFavorites();
             return args;
         });
-    }
-
-    function userFavoriteFriendsStatusForFavTab(visibility) {
-        if (visibility === 'public') {
-            return 'primary';
-        }
-        if (visibility === 'friends') {
-            return 'success';
-        }
-        return 'info';
     }
 
     function formatVisibility(value) {
@@ -1165,7 +1302,7 @@
         margin-right: var(--favorites-card-checkbox-margin, 10px);
     }
 
-    :deep(.favorites-search-card__action--checkbox .el-checkbox) {
+    :deep(.favorites-search-card__action--checkbox [data-slot='checkbox']) {
         margin: 0;
     }
 

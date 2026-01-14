@@ -1,33 +1,42 @@
 <template>
-    <el-config-provider
-        :locale="/** @type {import('element-plus/es/locale').Language} */ (messages[locale].elementPlus)">
-        <MacOSTitleBar></MacOSTitleBar>
+    <TooltipProvider>
+        <el-config-provider
+            :locale="/** @type {import('element-plus/es/locale').Language} */ (messages[locale].elementPlus)">
+            <MacOSTitleBar></MacOSTitleBar>
 
-        <div
-            id="x-app"
-            class="x-app"
-            :class="{ 'with-macos-titlebar': isMacOS }"
-            ondragenter="event.preventDefault()"
-            ondragover="event.preventDefault()"
-            ondrop="event.preventDefault()">
-            <RouterView></RouterView>
+            <div
+                id="x-app"
+                class="x-app"
+                :class="{ 'with-macos-titlebar': isMacOS }"
+                ondragenter="event.preventDefault()"
+                ondragover="event.preventDefault()"
+                ondrop="event.preventDefault()">
+                <RouterView></RouterView>
+                <Toaster position="top-center"></Toaster>
 
-            <VRCXUpdateDialog></VRCXUpdateDialog>
-        </div>
-    </el-config-provider>
+                <AlertDialogModal></AlertDialogModal>
+
+                <VRCXUpdateDialog></VRCXUpdateDialog>
+            </div>
+        </el-config-provider>
+    </TooltipProvider>
 </template>
 
 <script setup>
     import { computed, onBeforeMount, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
 
+    import { Toaster } from './components/ui/sonner';
+    import { TooltipProvider } from './components/ui/tooltip';
     import { createGlobalStores } from './stores';
     import { initNoty } from './plugin/noty';
 
+    import AlertDialogModal from './components/ui/alert-dialog/AlertDialogModal.vue';
     import MacOSTitleBar from './components/MacOSTitleBar.vue';
     import VRCXUpdateDialog from './components/dialogs/VRCXUpdateDialog.vue';
 
-    import './app.css';
+    import '@/styles/globals.css';
+    import '@/app.css';
 
     console.log(`isLinux: ${LINUX}`);
 

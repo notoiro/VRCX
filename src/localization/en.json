@@ -33,6 +33,7 @@
         "github": "VRCX on GitHub",
         "discord": "Join our Discord",
         "whats_new": "What's New?",
+        "update_available": "Update available",
         "custom_nav": {
             "header": "Custom Navigation",
             "dialog_title": "Customize Navigation Menu",
@@ -185,6 +186,8 @@
                 "removed_list_header": "Avatars pending deletion:",
                 "copy_removed_ids": "Copy Avatar IDs",
                 "copied_ids": "Avatar IDs copied to clipboard",
+                "copy_failed": "Failed to copy to clipboard",
+                "dismiss": "Dismiss",
                 "checking_progress": "Checking avatar ({current}/{total})...",
                 "confirm_delete_invalid": "Delete Invalid Avatars?",
                 "confirm_delete_description": "Found {count} invalid avatars, delete them?",
@@ -551,6 +554,7 @@
                     "theme_mode_system": "System",
                     "theme_mode_light": "Light",
                     "theme_mode_dark": "Dark",
+                    "theme_mode_midnight": "Midnight",
                     "theme_mode_blue": "Blue",
                     "theme_mode_darkblue": "Dark Blue",
                     "theme_mode_amoled": "Amoled",
@@ -561,14 +565,15 @@
                     "zoom": "Zoom",
                     "vrcplus_profile_icons": "VRCPlus Profile Icons",
                     "tooltips": "Tooltips",
+                    "show_instance_id": "Show Instance ID",
                     "age_gated_instances": "Age Gated Instances",
                     "nicknames": "Memo Nicknames",
                     "sort_favorite_by": "Sort Favorites by",
-                    "sort_favorite_by_name": "name",
-                    "sort_favorite_by_date": "date",
+                    "sort_favorite_by_name": "Name",
+                    "sort_favorite_by_date": "Date",
                     "sort_instance_users_by": "Sort Instance Users by",
-                    "sort_instance_users_by_time": "time",
-                    "sort_instance_users_by_alphabet": "alphabetical",
+                    "sort_instance_users_by_time": "Time",
+                    "sort_instance_users_by_alphabet": "Alphabetical",
                     "table_max_size": "Table Max Size",
                     "table_page_sizes": "Table Page Sizes",
                     "table_page_sizes_error": "Page size must be a number between 1 and 1000",
@@ -906,6 +911,11 @@
         "pending_offline": "Pending Offline"
     },
     "dialog": {
+        "alertdialog": {
+            "ok": "OK",
+            "cancel": "Cancel",
+            "confirm": "Confirm"
+        },
         "user": {
             "status": {
                 "active": "Active",
@@ -1064,6 +1074,7 @@
                 "sort_by": "Sort by:",
                 "sort_by_name": "Name",
                 "sort_by_update": "Updated",
+                "sort_by_uploaded": "Uploaded",
                 "all": "All",
                 "public": "Public",
                 "private": "Private",
@@ -1531,6 +1542,11 @@
             "header": "VRCX Updater",
             "latest_version": "VRCX is up to date.",
             "ready_for_update": "Ready for install, restart VRCX to apply.",
+            "branch_stable": "Stable",
+            "branch_nightly": "Nightly",
+            "nightly_title": "Nightly builds",
+            "nightly_notice": "Nightly builds are for testing. For stability, use stable build.",
+            "release": "Release",
             "download": "Download",
             "install": "Install",
             "cancel": "Cancel"
@@ -1895,7 +1911,8 @@
                 "created": "Created Date",
                 "description": "Description",
                 "export_to_calendar": "Export to Calendar",
-                "download_ics": "Download .ics"
+                "download_ics": "Download .ics",
+                "copied_event_link": "Calendar event URL copied to clipboard"
             },
             "featured_events": "Featured Events"
         },
@@ -1966,6 +1983,11 @@
             "already_first": "Already first image",
             "already_last": "Already last image",
             "reordered": "Successfully reordered avatar gallery images"
+        },
+        "upload": {
+            "loading": "Uploading",
+            "success": "Upload completed",
+            "error": "Upload failed"
         },
         "world": {
             "image_changed": "World image changed",
@@ -2226,6 +2248,9 @@
         }
     },
     "table": {
+        "pagination": {
+            "rows_per_page": "Rows per page"
+        },
         "feed": {
             "date": "Date",
             "type": "Type",

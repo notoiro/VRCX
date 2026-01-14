@@ -1,6 +1,6 @@
 <template>
     <!--//- Pictures | Screenshot Helper-->
-    <div class="options-container">
+    <div class="options-container" style="margin-top: 0">
         <span class="header">{{ t('view.settings.advanced.advanced.screenshot_helper.header') }}</span>
         <div class="options-container-item">
             <span class="name">{{ t('view.settings.advanced.advanced.screenshot_helper.description') }}</span>
@@ -23,9 +23,9 @@
             :value="screenshotHelperCopyToClipboard"
             @change="setScreenshotHelperCopyToClipboard()"
             :long-label="true" />
-        <el-button size="small" :icon="Delete" @click="askDeleteAllScreenshotMetadata()">{{
+        <Button size="sm" variant="outline" class="mt-2" @click="askDeleteAllScreenshotMetadata()">{{
             t('view.settings.advanced.advanced.delete_all_screenshot_metadata.button')
-        }}</el-button>
+        }}</Button>
     </div>
 
     <div class="options-container">
@@ -46,26 +46,29 @@
                 t('view.settings.advanced.advanced.user_generated_content.description')
             }}</span>
         </div>
-        <el-button size="small" :icon="Folder" @click="openUGCFolder()">{{
-            t('view.settings.advanced.advanced.user_generated_content.folder')
-        }}</el-button>
-        <el-button size="small" :icon="FolderOpened" @click="openUGCFolderSelector()">{{
-            t('view.settings.advanced.advanced.user_generated_content.set_folder')
-        }}</el-button>
-        <el-button size="small" :icon="Delete" @click="resetUGCFolder()" v-if="ugcFolderPath">{{
-            t('view.settings.advanced.advanced.user_generated_content.reset_override')
-        }}</el-button>
+        <div class="flex gap-2 mt-2">
+            <Button size="sm" variant="outline" @click="openUGCFolder()">{{
+                t('view.settings.advanced.advanced.user_generated_content.folder')
+            }}</Button>
+            <Button size="sm" variant="outline" @click="openUGCFolderSelector()">{{
+                t('view.settings.advanced.advanced.user_generated_content.set_folder')
+            }}</Button>
+            <Button size="sm" variant="outline" @click="resetUGCFolder()" v-if="ugcFolderPath">{{
+                t('view.settings.advanced.advanced.user_generated_content.reset_override')
+            }}</Button>
+        </div>
+
         <br />
         <br />
         <br />
         <span class="sub-header" style="margin-right: 5px">{{
             t('view.settings.advanced.advanced.save_instance_prints_to_file.header')
         }}</span>
-        <el-tooltip
-            placement="top"
+        <TooltipWrapper
+            side="top"
             :content="t('view.settings.advanced.advanced.save_instance_prints_to_file.header_tooltip')">
             <el-icon><InfoFilled /></el-icon>
-        </el-tooltip>
+        </TooltipWrapper>
         <simple-switch
             :label="t('view.settings.advanced.advanced.save_instance_prints_to_file.description')"
             :value="saveInstancePrints"
@@ -87,11 +90,11 @@
         <span class="sub-header" style="margin-right: 5px"
             >{{ t('view.settings.advanced.advanced.save_instance_emoji_to_file.header') }}
         </span>
-        <el-tooltip
-            placement="top"
+        <TooltipWrapper
+            side="top"
             :content="t('view.settings.advanced.advanced.save_instance_prints_to_file.header_tooltip')">
             <el-icon><InfoFilled /></el-icon>
-        </el-tooltip>
+        </TooltipWrapper>
         <simple-switch
             :label="t('view.settings.advanced.advanced.save_instance_emoji_to_file.description')"
             :value="saveInstanceEmoji"
@@ -101,7 +104,8 @@
 </template>
 
 <script setup>
-    import { Delete, Folder, FolderOpened, InfoFilled } from '@element-plus/icons-vue';
+    import { Button } from '@/components/ui/button';
+    import { InfoFilled } from '@element-plus/icons-vue';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 

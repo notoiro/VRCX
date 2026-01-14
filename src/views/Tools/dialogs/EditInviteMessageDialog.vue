@@ -7,28 +7,28 @@
         @close="closeDialog">
         <div style="font-size: 12px">
             <span>{{ t('dialog.edit_invite_message.description') }}</span>
-            <el-input
+            <InputGroupTextareaField
                 v-model="message"
-                type="textarea"
-                size="small"
-                maxlength="64"
-                show-word-limit
-                :autosize="{ minRows: 2, maxRows: 5 }"
+                :maxlength="64"
+                :rows="2"
+                class="mt-2.5"
                 placeholder=""
-                style="margin-top: 10px"></el-input>
+                show-count />
         </div>
         <template #footer>
-            <el-button @click="closeDialog">{{ t('dialog.edit_invite_message.cancel') }}</el-button>
-            <el-button type="primary" @click="saveEditInviteMessage">{{
-                t('dialog.edit_invite_message.save')
-            }}</el-button>
+            <Button variant="secondary" class="mr-2" @click="closeDialog">{{
+                t('dialog.edit_invite_message.cancel')
+            }}</Button>
+            <Button @click="saveEditInviteMessage">{{ t('dialog.edit_invite_message.save') }}</Button>
         </template>
     </el-dialog>
 </template>
 
 <script setup>
     import { ref, watch } from 'vue';
-    import { ElMessage } from 'element-plus';
+    import { Button } from '@/components/ui/button';
+    import { InputGroupTextareaField } from '@/components/ui/input-group';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
     import { inviteMessagesRequest } from '../../../api';
@@ -69,13 +69,10 @@
                 })
                 .then((args) => {
                     if (args.json[slot].message === props.inviteMessage.message) {
-                        ElMessage({
-                            message: "VRChat API didn't update message, try again",
-                            type: 'error'
-                        });
+                        toast.error("VRChat API didn't update message, try again");
                         throw new Error("VRChat API didn't update message, try again");
                     } else {
-                        ElMessage({ message: 'Invite message updated', type: 'success' });
+                        toast.success('Invite message updated');
                         emit('updateInviteMessages', messageType);
                     }
                     return args;

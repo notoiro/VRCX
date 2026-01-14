@@ -14,26 +14,35 @@
         <div class="favorites-search-card__actions">
             <div class="favorites-search-card__action-group">
                 <div class="favorites-search-card__action">
-                    <el-tooltip placement="top" :content="t('view.favorite.select_avatar_tooltip')">
-                        <el-button
+                    <TooltipWrapper side="top" :content="t('view.favorite.select_avatar_tooltip')">
+                        <Button
+                            size="icon-sm"
+                            variant="outline"
                             :disabled="currentUser.currentAvatar === favorite.id"
-                            size="small"
-                            :icon="Check"
-                            circle
-                            class="favorites-search-card__action-btn"
-                            @click.stop="selectAvatarWithConfirmation(favorite.id)" />
-                    </el-tooltip>
+                            class="favorites-search-card__action-btn rounded-full text-xs h-6 w-6"
+                            @click.stop="selectAvatarWithConfirmation(favorite.id)">
+                            <i class="ri-check-line"></i
+                        ></Button>
+                    </TooltipWrapper>
                 </div>
                 <div class="favorites-search-card__action">
-                    <el-tooltip placement="bottom" :content="t('view.favorite.favorite_tooltip')">
-                        <el-button
-                            type="default"
-                            :icon="favoriteExists ? Star : StarFilled"
-                            size="small"
-                            circle
-                            class="favorites-search-card__action-btn"
-                            @click.stop="showFavoriteDialog('avatar', favorite.id)" />
-                    </el-tooltip>
+                    <TooltipWrapper side="bottom" :content="t('view.favorite.edit_favorite_tooltip')">
+                        <Button
+                            v-if="favoriteExists"
+                            size="icon-sm"
+                            variant="outline"
+                            class="favorites-search-card__action-btn rounded-full text-xs h-6 w-6"
+                            @click.stop="showFavoriteDialog('avatar', favorite.id)">
+                            <i class="ri-star-line"></i>
+                        </Button>
+                        <Button
+                            v-else
+                            size="icon-sm"
+                            class="favorites-search-card__action-btn rounded-full text-xs h-6 w-6"
+                            @click.stop="showFavoriteDialog('avatar', favorite.id)">
+                            <i class="ri-star-line"></i>
+                        </Button>
+                    </TooltipWrapper>
                 </div>
             </div>
         </div>
@@ -41,7 +50,8 @@
 </template>
 
 <script setup>
-    import { Check, Star, StarFilled } from '@element-plus/icons-vue';
+    import { Check, Star } from 'lucide-vue-next';
+    import { Button } from '@/components/ui/button';
     import { computed } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';

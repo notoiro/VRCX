@@ -1,19 +1,11 @@
-/*
-/* Copyright(c) 2019-2025 pypy and individual contributors.
-/* All rights reserved.
-/*
-/* This work is licensed under the terms of the MIT license.
-/* For a copy, see <https://opensource.org/licenses/MIT>.
-*/
-
 @import 'tailwindcss';
 
 @import 'animate.css/animate.min.css';
 @import 'noty/lib/noty.css';
 @import 'remixicon/fonts/remixicon.css';
 
-@import '../assets/scss/flags.css';
-@import '../assets/scss/fonts.css';
+@import '../styles/flags.css';
+@import '../styles/fonts.css';
 
 /*
     마지노선인듯
@@ -248,6 +240,30 @@ button {
 
 .x-app-type {
     color: #fff;
+    width: 1024px;
+    height: 1536px;
+    position: relative;
+    overflow: hidden;
+}
+
+.wrist {
+    position: absolute;
+    top: 0px;
+    left: 0;
+    width: 512px;
+    height: 512px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+}
+
+.hmd {
+    position: absolute;
+    top: 512px;
+    left: 0;
+    width: 1024px;
+    height: 1024px;
+    z-index: 10;
 }
 
 .background {
@@ -467,6 +483,7 @@ i.x-user-status.busy {
 }
 
 .tracker-device img {
+    display: inline-block;
     height: 32px;
     transition: all 0.25s linear;
 }

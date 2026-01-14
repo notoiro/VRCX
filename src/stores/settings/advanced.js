@@ -1,23 +1,26 @@
 import { reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import { AppDebug } from '../../service/appConfig';
 import { database } from '../../service/database';
+import { languageCodes } from '../../localization';
 import { useGameStore } from '../game';
+import { useModalStore } from '../modal';
 import { useVRCXUpdaterStore } from '../vrcxUpdater';
 import { useVrcxStore } from '../vrcx';
 import { watchState } from '../../service/watchState';
 
 import configRepository from '../../service/config';
 import webApiService from '../../service/webapi';
-import { languageCodes } from '../../localization';
 
 export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
     const gameStore = useGameStore();
     const vrcxStore = useVrcxStore();
     const VRCXUpdaterStore = useVRCXUpdaterStore();
+    const modalStore = useModalStore();
 
     const { t } = useI18n();
 
@@ -162,10 +165,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             configRepository.getString('VRCX_SentryEnabled', '')
         ]);
 
-        if (
-            !bioLanguageConfig ||
-            !languageCodes.includes(bioLanguageConfig)
-        ) {
+        if (!bioLanguageConfig || !languageCodes.includes(bioLanguageConfig)) {
             bioLanguage.value = 'en';
         } else {
             bioLanguage.value = bioLanguageConfig;
@@ -468,68 +468,58 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
     }
 
     async function checkSentryConsent() {
-        const { action: consentAction } = await ElMessageBox.confirm(
-            'Help improve VRCX by allowing anonymous error reporting?</br></br>' +
-                '• Only collects crash and error information.</br>' +
-                '• No personal data or VRChat information is collected.</br>' +
-                '• Only enabled in nightly builds.</br>' +
-                '• Can be disabled at anytime in Advanced Settings.',
-            'Anonymous Error Reporting',
-            {
-                type: 'warning',
-                center: true,
-                dangerouslyUseHTMLString: true,
-                closeOnClickModal: false,
-                closeOnPressEscape: false,
-                distinguishCancelAndClose: true
-            }
-        ).catch(() => ({ action: 'cancel' }));
+        modalStore
+            .confirm({
+                description:
+                    'Help improve VRCX by allowing anonymous error reporting?</br></br>' +
+                    '• Only collects crash and error information.</br>' +
+                    '• No personal data or VRChat information is collected.</br>' +
+                    '• Only enabled in nightly builds.</br>' +
+                    '• Can be disabled at anytime in Advanced Settings.',
+                title: 'Anonymous Error Reporting'
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
+                modalStore
+                    .confirm({
+                        description:
+                            'Error reporting setting has been enabled. Would you like to restart VRCX now for the change to take effect?',
+                        title: 'Restart Required',
+                        confirmText: 'Restart Now',
+                        cancelText: 'Later'
+                    })
+                    .then(async ({ ok }) => {
+                        if (!ok) return;
 
-        if (consentAction === 'cancel') return;
+                        sentryErrorReporting.value = true;
+                        configRepository.setBool('VRCX_SentryEnabled', true);
 
-        const { action: restartAction } = await ElMessageBox.confirm(
-            'Error reporting setting has been enabled. Would you like to restart VRCX now for the change to take effect?',
-            'Restart Required',
-            {
-                confirmButtonText: 'Restart Now',
-                cancelButtonText: 'Later',
-                type: 'warning',
-                center: true,
-                closeOnClickModal: false,
-                closeOnPressEscape: false
-            }
-        ).catch(() => ({ action: 'cancel' }));
-
-        if (restartAction === 'cancel') return;
-
-        sentryErrorReporting.value = true;
-        configRepository.setBool('VRCX_SentryEnabled', true);
-
-        VRCXUpdaterStore.restartVRCX(false);
+                        VRCXUpdaterStore.restartVRCX(false);
+                    });
+            });
     }
 
     async function setSentryErrorReporting() {
         if (VRCXUpdaterStore.branch !== 'Nightly') return;
 
-        const { action: restartAction } = await ElMessageBox.confirm(
-            'Error reporting setting has been disabled. Would you like to restart VRCX now for the change to take effect?',
-            'Restart Required',
-            {
-                confirmButtonText: 'Restart Now',
-                cancelButtonText: 'Later',
-                type: 'info',
-                center: true
-            }
-        ).catch(() => ({ action: 'cancel' }));
+        modalStore
+            .confirm({
+                description:
+                    'Error reporting setting has been disabled. Would you like to restart VRCX now for the change to take effect?',
+                title: 'Restart Required',
+                confirmText: 'Restart Now',
+                cancelText: 'Later'
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
 
-        if (restartAction === 'cancel') return;
-
-        sentryErrorReporting.value = !sentryErrorReporting.value;
-        await configRepository.setBool(
-            'VRCX_SentryEnabled',
-            sentryErrorReporting.value
-        );
-        VRCXUpdaterStore.restartVRCX(false);
+                sentryErrorReporting.value = !sentryErrorReporting.value;
+                await configRepository.setBool(
+                    'VRCX_SentryEnabled',
+                    sentryErrorReporting.value
+                );
+                VRCXUpdaterStore.restartVRCX(false);
+            });
     }
 
     async function getSqliteTableSizes() {
@@ -628,10 +618,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
 
     async function translateText(text, targetLang, overrides) {
         if (!translationApi.value) {
-            ElMessage({
-                message: 'Translation API disabled',
-                type: 'warning'
-            });
+            toast.warning('Translation API disabled');
             return null;
         }
 
@@ -641,10 +628,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
         if (provider === 'google') {
             const keyToUse = overrides?.key ?? translationApiKey.value;
             if (!keyToUse) {
-                ElMessage({
-                    message: 'No Translation API key configured',
-                    type: 'warning'
-                });
+                toast.warning('No Translation API key configured');
                 return null;
             }
             try {
@@ -672,10 +656,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
                 }
                 return data.data.translations[0].translatedText;
             } catch (err) {
-                ElMessage({
-                    message: `Translation failed: ${err.message}`,
-                    type: 'error'
-                });
+                toast.error(`Translation failed: ${err.message}`);
                 return null;
             }
         }
@@ -692,10 +673,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             `You are a translation assistant. Translate the user message into ${targetLang}. Only return the translated text.`;
 
         if (!endpoint || !model) {
-            ElMessage({
-                message: 'Translation endpoint/model missing',
-                type: 'warning'
-            });
+            toast.warning('Translation endpoint/model missing');
             return null;
         }
 
@@ -742,120 +720,94 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             const translated = data?.choices?.[0]?.message?.content;
             return typeof translated === 'string' ? translated.trim() : null;
         } catch (err) {
-            ElMessage({
-                message: `Translation failed: ${err.message}`,
-                type: 'error'
-            });
+            toast.error(`Translation failed: ${err.message}`);
             return null;
         }
     }
 
     function cropPrintsChanged() {
         if (!cropInstancePrints.value) return;
-        ElMessageBox.confirm(
-            t(
-                'view.settings.advanced.advanced.save_instance_prints_to_file.crop_convert_old'
-            ),
-            {
-                confirmButtonText: t(
+        modalStore
+            .confirm({
+                description: t(
+                    'view.settings.advanced.advanced.save_instance_prints_to_file.crop_convert_old'
+                ),
+                title: '',
+                confirmText: t(
                     'view.settings.advanced.advanced.save_instance_prints_to_file.crop_convert_old_confirm'
                 ),
-                cancelButtonText: t(
+                cancelText: t(
                     'view.settings.advanced.advanced.save_instance_prints_to_file.crop_convert_old_cancel'
-                ),
-                type: 'info',
-                showInput: false
-            }
-        )
-            .then(async ({ action }) => {
-                if (action === 'confirm') {
-                    const msgBox = ElMessage({
-                        message: 'Batch print cropping in progress...',
-                        type: 'warning',
-                        duration: 0
-                    });
-                    try {
-                        await AppApi.CropAllPrints(ugcFolderPath.value);
-                        ElMessage({
-                            message: 'Batch print cropping complete',
-                            type: 'success'
-                        });
-                    } catch (err) {
-                        console.error(err);
-                        ElMessage({
-                            message: `Batch print cropping failed: ${err}`,
-                            type: 'error'
-                        });
-                    } finally {
-                        msgBox.close();
-                    }
+                )
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
+                const msgBox = toast.warning(
+                    'Batch print cropping in progress...',
+                    { duration: Infinity, position: 'bottom-right' }
+                );
+                try {
+                    await AppApi.CropAllPrints(ugcFolderPath.value);
+                    toast.success('Batch print cropping complete');
+                } catch (err) {
+                    console.error(err);
+                    toast.error(`Batch print cropping failed: ${err}`);
+                } finally {
+                    toast.dismiss(msgBox);
                 }
             })
             .catch(() => {});
     }
 
     function askDeleteAllScreenshotMetadata() {
-        ElMessageBox.confirm(
-            t(
-                'view.settings.advanced.advanced.delete_all_screenshot_metadata.ask'
-            ),
-            {
-                confirmButtonText: t(
+        modalStore
+            .confirm({
+                description: t(
+                    'view.settings.advanced.advanced.delete_all_screenshot_metadata.ask'
+                ),
+                title: '',
+                confirmText: t(
                     'view.settings.advanced.advanced.delete_all_screenshot_metadata.confirm_yes'
                 ),
-                cancelButtonText: t(
+                cancelText: t(
                     'view.settings.advanced.advanced.delete_all_screenshot_metadata.confirm_no'
-                ),
-                type: 'warning',
-                showInput: false
-            }
-        )
-            .then(({ action }) => {
-                if (action === 'confirm') {
-                    deleteAllScreenshotMetadata();
-                }
+                )
+            })
+            .then(({ ok }) => {
+                if (!ok) return;
+                deleteAllScreenshotMetadata();
             })
             .catch(() => {});
     }
 
     function deleteAllScreenshotMetadata() {
-        ElMessageBox.confirm(
-            t(
-                'view.settings.advanced.advanced.delete_all_screenshot_metadata.confirm'
-            ),
-            {
-                confirmButtonText: t(
+        modalStore
+            .confirm({
+                description: t(
+                    'view.settings.advanced.advanced.delete_all_screenshot_metadata.confirm'
+                ),
+                title: '',
+                confirmText: t(
                     'view.settings.advanced.advanced.save_instance_prints_to_file.crop_convert_old_confirm'
                 ),
-                cancelButtonText: t(
+                cancelText: t(
                     'view.settings.advanced.advanced.save_instance_prints_to_file.crop_convert_old_cancel'
-                ),
-                type: 'warning',
-                showInput: false
-            }
-        )
-            .then(async ({ action }) => {
-                if (action === 'confirm') {
-                    const msgBox = ElMessage({
-                        message: 'Batch metadata removal in progress...',
-                        type: 'warning',
-                        duration: 0
-                    });
-                    try {
-                        await AppApi.DeleteAllScreenshotMetadata();
-                        ElMessage({
-                            message: 'Batch metadata removal complete',
-                            type: 'success'
-                        });
-                    } catch (err) {
-                        console.error(err);
-                        ElMessage({
-                            message: `Batch metadata removal failed: ${err}`,
-                            type: 'error'
-                        });
-                    } finally {
-                        msgBox.close();
-                    }
+                )
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
+                const msgBox = toast.warning(
+                    'Batch metadata removal in progress...',
+                    { duration: Infinity, position: 'bottom-right' }
+                );
+                try {
+                    await AppApi.DeleteAllScreenshotMetadata();
+                    toast.success('Batch metadata removal complete');
+                } catch (err) {
+                    console.error(err);
+                    toast.error(`Batch metadata removal failed: ${err}`);
+                } finally {
+                    toast.dismiss(msgBox);
                 }
             })
             .catch(() => {});

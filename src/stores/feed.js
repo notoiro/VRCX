@@ -24,18 +24,8 @@ export const useFeedStore = defineStore('Feed', () => {
         vip: false,
         loading: false,
         filter: [],
-        tableProps: {
-            stripe: true,
-            size: 'small',
-            defaultSort: null,
-            rowKey: (row) =>
-                `${row.type}:${row.rowId ?? row.uid}:${row.created_at ?? ''}`
-        },
         pageSize: 20,
-        pageSizeLinked: true,
-        paginationProps: {
-            layout: 'sizes,prev,pager,next,total'
-        }
+        pageSizeLinked: true
     });
 
     const feedSessionTable = ref([]);
@@ -188,10 +178,7 @@ export const useFeedStore = defineStore('Feed', () => {
         if (!feedSearch(feed)) {
             return;
         }
-        feedTable.value.data.push({
-            ...feed,
-            uid: crypto.randomUUID()
-        });
+        feedTable.value.data.push(feed);
         sweepFeed();
         UiStore.notifyMenu('feed');
     }

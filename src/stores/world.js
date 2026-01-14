@@ -1,6 +1,6 @@
 import { reactive, shallowReactive, watch } from 'vue';
-import { ElMessage } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 
 import {
     checkVRChatCache,
@@ -36,7 +36,7 @@ export const useWorldStore = defineStore('World', () => {
         avatarScalingDisabled: false,
         focusViewDisabled: false,
         rooms: [],
-        treeData: [],
+        treeData: {},
         bundleSizes: [],
         lastUpdated: '',
         inCache: false,
@@ -78,7 +78,7 @@ export const useWorldStore = defineStore('World', () => {
         L.shortName = shortName;
         D.id = L.worldId;
         D.$location = L;
-        D.treeData = [];
+        D.treeData = {};
         D.bundleSizes = [];
         D.lastUpdated = '';
         D.visible = true;
@@ -132,10 +132,7 @@ export const useWorldStore = defineStore('World', () => {
             .catch((err) => {
                 D.loading = false;
                 D.visible = false;
-                ElMessage({
-                    message: 'Failed to load world',
-                    type: 'error'
-                });
+                toast.error('Failed to load world');
                 throw err;
             })
             .then((args) => {

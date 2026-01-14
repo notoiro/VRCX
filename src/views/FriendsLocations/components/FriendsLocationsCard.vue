@@ -1,10 +1,5 @@
 <template>
-    <el-card
-        class="friend-card"
-        shadow="never"
-        :body-style="{ padding: `${16 * cardScale * cardSpacing}px` }"
-        :style="cardStyle"
-        @click="showUserDialog(friend.id)">
+    <Card class="friend-card p-0 gap-0" :style="cardStyle" @click="showUserDialog(friend.id)">
         <div class="friend-card__header">
             <div class="friend-card__avatar-wrapper">
                 <el-avatar :size="avatarSize" :src="userImage(props.friend.ref, true)" class="friend-card__avatar">
@@ -27,11 +22,12 @@
                     link />
             </div>
         </div>
-    </el-card>
+    </Card>
 </template>
 
 <script setup>
     import { computed } from 'vue';
+    import { Card } from '@/components/ui/card';
 
     import { userImage, userStatusClass } from '../../../shared/utils';
     import { useUserStore } from '../../../stores';
@@ -62,7 +58,8 @@
     const cardStyle = computed(() => ({
         '--card-scale': props.cardScale,
         '--card-spacing': props.cardSpacing,
-        cursor: 'pointer'
+        cursor: 'pointer',
+        padding: `${16 * props.cardScale * props.cardSpacing}px`
     }));
 
     const avatarFallback = computed(() => props.friend.name.charAt(0) ?? '?');
@@ -195,7 +192,6 @@
         min-height: calc(40px * var(--card-scale));
         padding: calc(6px * var(--card-scale)) calc(10px * var(--card-scale));
         border-radius: calc(10px * var(--card-scale));
-        background: var(--el-fill-color);
         color: var(--el-text-color-regular);
         font-size: calc(12px * var(--card-scale));
         line-height: 1.3;

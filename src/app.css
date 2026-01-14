@@ -1,24 +1,16 @@
-/*
-/* Copyright(c) 2019-2025 pypy and individual contributors.
-/* All rights reserved.
-/*
-/* This work is licensed under the terms of the MIT license.
-/* For a copy, see <https://opensource.org/licenses/MIT>.
-*/
-
-@import 'tailwindcss';
-
 @import 'element-plus/dist/index.css';
 @import 'element-plus/theme-chalk/dark/css-vars.css';
 
 @import 'animate.css/animate.min.css';
 @import 'noty/lib/noty.css';
 @import 'remixicon/fonts/remixicon.css';
+@import 'vue-sonner/style.css';
+@import 'vue-json-pretty/lib/styles.css';
 
-@import './assets/scss/flags.css';
-@import './assets/scss/animated-emoji.css';
-@import './assets/scss/fonts.css';
-@import './assets/scss/noty.css';
+@import './styles/flags.css';
+@import './styles/animated-emoji.css';
+@import './styles/fonts.css';
+@import './styles/noty.css';
 
 :root {
     --font-western:
@@ -27,23 +19,28 @@
     --font-symbol: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
     --font-fallback-cjk: sans-serif;
     --font-primary-cjk:
-        'Noto Sans JP Variable', 'Noto Sans SC Variable', 'Noto Sans KR Variable', 'Noto Sans TC Variable';
+        'Noto Sans JP Variable', 'Noto Sans SC Variable',
+        'Noto Sans KR Variable', 'Noto Sans TC Variable';
 }
 :root[lang='zh-CN'] {
     --font-primary-cjk:
-        'Noto Sans SC Variable', 'Noto Sans JP Variable', 'Noto Sans KR Variable', 'Noto Sans TC Variable';
+        'Noto Sans SC Variable', 'Noto Sans JP Variable',
+        'Noto Sans KR Variable', 'Noto Sans TC Variable';
 }
 :root[lang='ja'] {
     --font-primary-cjk:
-        'Noto Sans JP Variable', 'Noto Sans KR Variable', 'Noto Sans TC Variable', 'Noto Sans SC Variable';
+        'Noto Sans JP Variable', 'Noto Sans KR Variable',
+        'Noto Sans TC Variable', 'Noto Sans SC Variable';
 }
 :root[lang='ko'] {
     --font-primary-cjk:
-        'Noto Sans KR Variable', 'Noto Sans JP Variable', 'Noto Sans TC Variable', 'Noto Sans SC Variable';
+        'Noto Sans KR Variable', 'Noto Sans JP Variable',
+        'Noto Sans TC Variable', 'Noto Sans SC Variable';
 }
 :root[lang='zh-TW'] {
     --font-primary-cjk:
-        'Noto Sans TC Variable', 'Noto Sans JP Variable', 'Noto Sans KR Variable', 'Noto Sans SC Variable';
+        'Noto Sans TC Variable', 'Noto Sans JP Variable',
+        'Noto Sans KR Variable', 'Noto Sans SC Variable';
 }
 :root {
     --el-color-primary-light-9: color-mix(
@@ -379,6 +376,20 @@ html.dark,
     }
 }
 
+/* :root[data-theme='dark'] {
+    --el-bg-color: var(--color-neutral-900);
+    --el-bg-color-page: var(--color-neutral-900);
+    --el-bg-color-overlay: var(--color-neutral-800);
+
+    .el-dialog {
+        background-color: var(--el-bg-color-overlay) !important;
+    }
+
+    .el-message-box {
+        background-color: var(--el-bg-color-overlay) !important;
+    }
+} */
+
 html.dark body,
 :root.dark body,
 :root[data-theme='dark'] body {
@@ -395,8 +406,8 @@ html.dark body,
         ),
         linear-gradient(
             180deg,
-            color-mix(in oklch, var(--color-neutral-950) 92%, transparent),
-            var(--color-neutral-950)
+            color-mix(in oklch, var(--el-bg-color-page) 92%, transparent),
+            var(--el-bg-color-page)
         );
 }
 
@@ -459,8 +470,7 @@ html.dark .x-friend-item > .detail > .extra,
 }
 
 .el-select__wrapper {
-    height: var(--el-component-size);
-    padding: 0 12px;
+    padding: 4px 12px;
 }
 
 .el-table {
@@ -568,10 +578,6 @@ html.dark .x-friend-item > .detail > .extra,
 .el-table .cell {
     padding-left: 4px;
     padding-right: 4px;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
 }
 
 .el-table th.el-table__cell {
@@ -591,10 +597,22 @@ html.dark .x-friend-item > .detail > .extra,
     background-color: var(--el-table-row-hover-bg-color) !important;
 }
 
-.el-table__row:hover .el-table__cell .cell {
+.el-table .cell,
+.data-table tr > td > span,
+.data-table tr > td > div > span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+}
+
+.el-table__row:hover .el-table__cell .cell,
+.data-table tr:hover > td > span,
+.data-table tr:hover > td > div > span {
     display: revert;
     -webkit-line-clamp: unset;
     line-clamp: unset;
+    white-space: pre-line;
 }
 
 .el-tabs__content {
@@ -606,9 +624,6 @@ html.dark .x-friend-item > .detail > .extra,
     word-break: break-word;
 }
 
-.el-card.x-image-selected {
-    border-color: var(--el-color-primary) !important;
-}
 
 .el-popper.x-quick-search .el-select-dropdown__item {
     width: 100%;
@@ -994,7 +1009,7 @@ hr.x-vertical-divider {
     display: flex;
     align-items: center;
     padding: 6px;
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
 }
 
@@ -1133,7 +1148,7 @@ img.friends-list-avatar {
 .x-friend-item > .detail > .extra,
 .extra {
     color: var(--el-text-color-secondary);
-    font-size: 11px;
+    font-size: 12px;
     & > span > span:first-child {
         scale: 0.9;
         margin-right: 2px;
@@ -1259,16 +1274,6 @@ i.x-status-icon.red {
     background: #ff2c2c;
 }
 
-.x-tag-friend {
-    color: var(--color-amber-400);
-    border-color: var(--color-amber-400) !important;
-}
-
-.x-tag-mutual-friend {
-    color: var(--el-color-success);
-    border-color: var(--el-color-success) !important;
-}
-
 .x-tag-platform-pc {
     color: #0078d4;
     border-color: #0078d4 !important;
@@ -1279,14 +1284,14 @@ i.x-status-icon.red {
     border-color: #3ddc84 !important;
 }
 
-.x-tag-platform-ios {
-    color: #c7c7ce;
-    border-color: #c7c7ce !important;
+.x-tag-friend {
+    color: var(--color-amber-400);
+    border-color: var(--color-amber-400) !important;
 }
 
-.x-tag-platform-other {
-    color: var(--el-color-danger);
-    border-color: var(--el-color-danger) !important;
+.x-tag-mutual-friend {
+    color: var(--el-color-success);
+    border-color: var(--el-color-success) !important;
 }
 
 .x-tag-age-verification {
@@ -1333,6 +1338,8 @@ i.x-status-icon.red {
 .options-container-item {
     font-size: 12px;
     margin-top: 5px;
+    display: flex;
+    align-items: center;
 }
 
 .options-container-item .name {

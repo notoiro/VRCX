@@ -1,10 +1,13 @@
-import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
+import { toast } from 'vue-sonner';
 
 import { THEME_CONFIG } from '../../constants';
 import { i18n } from '../../../plugin/i18n';
 import { router } from '../../../plugin/router';
+import { textToHex } from './string';
 import { useAppearanceSettingsStore } from '../../../stores';
+
+import configRepository from '../../../service/config.js';
 
 /**
  *
@@ -48,25 +51,6 @@ function applyThemeFonts(themeKey, fontLinks = []) {
     });
 }
 
-function ensureStylesheetLink(id) {
-    const linkEl = /** @type {HTMLLinkElement | null} */ (
-        document.getElementById(id)
-    );
-    if (!linkEl) {
-        const created = document.createElement('link');
-        created.setAttribute('id', id);
-        created.rel = 'stylesheet';
-        document.head.appendChild(created);
-        return created;
-    }
-    return linkEl;
-}
-
-function removeStylesheetLink(id) {
-    const linkEl = document.getElementById(id);
-    linkEl?.remove();
-}
-
 function changeAppThemeStyle(themeMode) {
     if (themeMode === 'system') {
         themeMode = systemIsDarkMode() ? 'dark' : 'light';
@@ -74,46 +58,26 @@ function changeAppThemeStyle(themeMode) {
 
     let themeConfig = THEME_CONFIG[themeMode];
     if (!themeConfig) {
+        // fallback to system
         console.error('Invalid theme mode:', themeMode);
-        // load system theme as fallback
+        configRepository.setString('VRCX_ThemeMode', 'system');
         themeMode = systemIsDarkMode() ? 'dark' : 'light';
         themeConfig = THEME_CONFIG[themeMode];
     }
 
-    const cssFiles = Array.isArray(themeConfig.cssFiles)
-        ? themeConfig.cssFiles.filter(Boolean)
-        : themeConfig.cssFile
-          ? [themeConfig.cssFile]
-          : [];
-
-    if (cssFiles.length > 0) {
-        const $appThemeStyle = ensureStylesheetLink('app-theme-style');
-        $appThemeStyle.href = cssFiles[0];
-    } else {
-        removeStylesheetLink('app-theme-style');
-    }
-
-    if (cssFiles.length > 1) {
-        const $appThemeOverlayStyle = ensureStylesheetLink(
-            'app-theme-overlay-style'
-        );
-        $appThemeOverlayStyle.href = cssFiles[1];
-    } else {
-        removeStylesheetLink('app-theme-overlay-style');
-    }
-
     applyThemeFonts(themeMode, themeConfig.fontLinks);
 
-    const shouldUseDarkClass =
-        typeof themeConfig.useDarkClass === 'boolean'
-            ? themeConfig.useDarkClass
-            : Boolean(themeConfig.isDark);
+    document.documentElement.setAttribute('data-theme', themeMode);
+
+    const shouldUseDarkClass = Boolean(themeConfig.isDark);
     if (shouldUseDarkClass) {
         document.documentElement.classList.add('dark');
     } else {
         document.documentElement.classList.remove('dark');
     }
     changeAppDarkStyle(themeConfig.isDark);
+
+    return { isDark: themeConfig.isDark };
 
     // let $appThemeDarkStyle = document.getElementById('app-theme-dark-style');
     // const darkThemeCssPath = `${filePathPrefix}theme.dark.css`;
@@ -212,8 +176,11 @@ function HSVtoRGB(h, s, v) {
     let g = 0;
     let b = 0;
     if (arguments.length === 1) {
+        // @ts-ignore
         s = h.s;
+        // @ts-ignore
         v = h.v;
+        // @ts-ignore
         h = h.h;
     }
     const i = Math.floor(h * 6);
@@ -260,12 +227,47 @@ function HSVtoRGB(h, s, v) {
     return `#${decColor.toString(16).substr(1)}`;
 }
 
+function formatJsonVars(ref) {
+    // remove all object keys that start with $
+    const newRef = { ...ref };
+    for (const key in newRef) {
+        if (key.startsWith('$')) {
+            delete newRef[key];
+        }
+    }
+    // sort keys alphabetically
+    const sortedKeys = Object.keys(newRef).sort();
+    const sortedRef = {};
+    sortedKeys.forEach((key) => {
+        sortedRef[key] = newRef[key];
+    });
+    if ('displayName' in sortedRef) {
+        // add _hexDisplayName to top
+        return {
+            // @ts-ignore
+            _hexDisplayName: textToHex(sortedRef.displayName),
+            ...sortedRef
+        };
+    }
+    if ('name' in sortedRef) {
+        // add _hexName to top
+        return {
+            // @ts-ignore
+            _hexName: textToHex(sortedRef.name),
+            ...sortedRef
+        };
+    }
+    return sortedRef;
+}
+
 function getNextDialogIndex() {
     let z = 2000;
     document.querySelectorAll('.el-overlay,.el-modal-dialog').forEach((v) => {
+        // @ts-ignore
         if (v.style.display === 'none') {
             return;
         }
+        // @ts-ignore
         const _z = Number(v.style.zIndex) || 0;
         if (_z > z) {
             z = _z;
@@ -312,7 +314,6 @@ async function getThemeMode(configRepository) {
     );
 
     let isDarkMode;
-
     if (initThemeMode === 'light') {
         isDarkMode = false;
     } else if (initThemeMode === 'system') {
@@ -326,11 +327,7 @@ async function getThemeMode(configRepository) {
 
 function redirectToToolsTab() {
     router.push({ name: 'tools' });
-    ElMessage({
-        message: i18n.global.t('view.tools.redirect_message'),
-        type: 'primary',
-        duration: 3000
-    });
+    toast(i18n.global.t('view.tools.redirect_message'), { duration: 3000 });
 }
 
 export {
@@ -342,6 +339,7 @@ export {
     refreshCustomScript,
     HueToHex,
     HSVtoRGB,
+    formatJsonVars,
     getNextDialogIndex,
     changeHtmlLangAttribute,
     setLoginContainerStyle,

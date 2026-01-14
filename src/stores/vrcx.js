@@ -1,10 +1,14 @@
 import { reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import Noty from 'noty';
 
+import {
+    clearPiniaActionTrail,
+    getPiniaActionTrail
+} from '../plugin/piniaActionTrail';
 import { debounce, parseLocation } from '../shared/utils';
 import { AppDebug } from '../service/appConfig';
 import { database } from '../service/database';
@@ -21,6 +25,7 @@ import { useGameStore } from './game';
 import { useGroupStore } from './group';
 import { useInstanceStore } from './instance';
 import { useLocationStore } from './location';
+import { useModalStore } from './modal';
 import { useNotificationStore } from './notification';
 import { usePhotonStore } from './photon';
 import { useSearchStore } from './search';
@@ -53,6 +58,7 @@ export const useVrcxStore = defineStore('Vrcx', () => {
     const vrcStatusStore = useVrcStatusStore();
     const galleryStore = useGalleryStore();
     const { t } = useI18n();
+    const modalStore = useModalStore();
 
     const state = reactive({
         databaseVersion: 0,
@@ -160,12 +166,10 @@ export const useVrcxStore = defineStore('Vrcx', () => {
         let msgBox;
         if (state.databaseVersion < databaseVersion) {
             if (state.databaseVersion) {
-                msgBox = ElMessage({
-                    message:
-                        'DO NOT CLOSE VRCX, database upgrade in progress...',
-                    type: 'warning',
-                    duration: 0
-                });
+                msgBox = toast.warning(
+                    'DO NOT CLOSE VRCX, database upgrade in progress...',
+                    { duration: Infinity, position: 'bottom-right' }
+                );
             }
             console.log(
                 `Updating database from ${state.databaseVersion} to ${databaseVersion}...`
@@ -188,24 +192,19 @@ export const useVrcxStore = defineStore('Vrcx', () => {
                     databaseVersion
                 );
                 console.log('Database update complete.');
-                msgBox?.close();
+                toast.dismiss(msgBox);
                 if (state.databaseVersion) {
                     // only display when database exists
-                    ElMessage({
-                        message: 'Database upgrade complete',
-                        type: 'success'
-                    });
+                    toast.success('Database upgrade complete');
                 }
                 state.databaseVersion = databaseVersion;
             } catch (err) {
                 console.error(err);
-                msgBox?.close();
-                ElMessage({
-                    message:
-                        'Database upgrade failed, check console for details',
-                    type: 'error',
-                    duration: 120000
-                });
+                toast.dismiss(msgBox);
+                toast.error(
+                    'Database upgrade failed, check console for details',
+                    { duration: 120000 }
+                );
                 AppApi.ShowDevTools();
             }
         }
@@ -365,12 +364,10 @@ export const useVrcxStore = defineStore('Vrcx', () => {
             } catch (e) {
                 console.error('Failed to add screenshot metadata', e);
                 if (e.message?.includes('UnauthorizedAccessException')) {
-                    ElMessage({
-                        message:
-                            'Failed to add screenshot metadata, access denied. Make sure VRCX has permission to access the screenshot folder.',
-                        type: 'error',
-                        duration: 10000
-                    });
+                    toast.error(
+                        'Failed to add screenshot metadata, access denied. Make sure VRCX has permission to access the screenshot folder.',
+                        { duration: 10000 }
+                    );
                 }
                 return;
             }
@@ -535,22 +532,34 @@ export const useVrcxStore = defineStore('Vrcx', () => {
             if (advancedSettingsStore.sentryErrorReporting) {
                 try {
                     import('@sentry/vue').then((Sentry) => {
-                        Sentry.captureMessage(
-                            `crash message: ${crashMessage}`,
-                            {
-                                level: 'fatal'
-                            }
-                        );
+                        const trail = getPiniaActionTrail().filter((entry) => {
+                            if (!entry) return false;
+                            return (
+                                typeof entry.t === 'string' &&
+                                typeof entry.a === 'string'
+                            );
+                        });
+                        const trailText = JSON.stringify(trail);
+                        Sentry.withScope((scope) => {
+                            scope.setLevel('fatal');
+                            scope.setTag('reason', 'crash-recovery');
+                            scope.setContext('pinia_actions', {
+                                trailText,
+                                sessionTime: performance.now() / 1000 / 60
+                            });
+                            Sentry.captureMessage(
+                                `crash message: ${crashMessage}`
+                            );
+                        });
+
+                        clearPiniaActionTrail();
                     });
                 } catch (error) {
                     console.error('Error setting up Sentry feedback:', error);
                 }
             }
 
-            ElMessage({
-                message: t('message.crash.vrcx_reload'),
-                type: 'success'
-            });
+            toast.success(t('message.crash.vrcx_reload'));
             return;
         }
         eventLaunchCommand(command);
@@ -603,10 +612,7 @@ export const useVrcxStore = defineStore('Vrcx', () => {
                 const regexAvatarId =
                     /avtr_[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}/g;
                 if (!avatarId.match(regexAvatarId) || avatarId.length !== 41) {
-                    ElMessage({
-                        message: 'Invalid Avatar ID',
-                        type: 'error'
-                    });
+                    toast.error('Invalid Avatar ID');
                     break;
                 }
                 if (advancedSettingsStore.showConfirmationOnSwitchAvatar) {
@@ -706,10 +712,10 @@ export const useVrcxStore = defineStore('Vrcx', () => {
                 return;
             }
             // popup message about auto restore
-            ElMessageBox.alert(
-                t('dialog.registry_backup.restore_prompt'),
-                t('dialog.registry_backup.header')
-            ).catch(() => {});
+            modalStore.alert({
+                description: t('dialog.registry_backup.restore_prompt'),
+                title: t('dialog.registry_backup.header')
+            });
             showRegistryBackupDialog();
             await AppApi.FocusWindow();
             await configRepository.setString(

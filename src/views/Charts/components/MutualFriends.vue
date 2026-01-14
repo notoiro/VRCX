@@ -2,22 +2,30 @@
     <div class="mutual-graph pt-12" ref="mutualGraphRef">
         <div class="options-container mutual-graph__toolbar">
             <div class="mutual-graph__actions">
-                <el-tooltip :content="t('view.charts.mutual_friend.force_dialog.open_label')" placement="top">
-                    <el-button circle :icon="Setting" :disabled="!graphReady" @click="openForceDialog"></el-button>
-                </el-tooltip>
-                <el-tooltip :content="fetchButtonLabel" placement="top">
-                    <el-button type="primary" :disabled="fetchButtonDisabled" :loading="isFetching" @click="startFetch">
+                <TooltipWrapper :content="t('view.charts.mutual_friend.force_dialog.open_label')" side="top">
+                    <Button
+                        class="rounded-full"
+                        size="icon"
+                        variant="outline"
+                        :disabled="!graphReady"
+                        @click="openForceDialog">
+                        <Settings />
+                    </Button>
+                </TooltipWrapper>
+                <TooltipWrapper :content="fetchButtonLabel" side="top">
+                    <Button :disabled="fetchButtonDisabled" @click="startFetch">
+                        <Spinner v-if="isFetching" />
                         {{ fetchButtonLabel }}
-                    </el-button>
-                </el-tooltip>
-                <el-tooltip
+                    </Button>
+                </TooltipWrapper>
+                <TooltipWrapper
                     v-if="isFetching"
                     :content="t('view.charts.mutual_friend.actions.stop_fetching')"
-                    placement="top">
-                    <el-button type="danger" plain :disabled="status.cancelRequested" @click="cancelFetch">
+                    side="top">
+                    <Button variant="destructive" :disabled="status.cancelRequested" @click="cancelFetch">
                         {{ t('view.charts.mutual_friend.actions.stop') }}
-                    </el-button>
-                </el-tooltip>
+                    </Button>
+                </TooltipWrapper>
             </div>
         </div>
 
@@ -27,7 +35,7 @@
                 <strong>{{ fetchState.processedFriends }} / {{ totalFriends }}</strong>
             </div>
 
-            <el-progress :percentage="progressPercent" :status="progressStatus" :stroke-width="14"> </el-progress>
+            <Progress :model-value="progressPercent" class="h-3" />
         </div>
 
         <div ref="chartRef" class="mutual-graph__canvas"></div>
@@ -43,59 +51,86 @@
             <p class="mutual-graph__force-description">
                 {{ t('view.charts.mutual_friend.force_dialog.description') }}
             </p>
-            <el-form label-position="top" size="small" class="mutual-graph__force-form">
-                <el-form-item :label="t('view.charts.mutual_friend.force_dialog.repulsion')">
-                    <el-input-number
-                        v-model="forceForm.repulsion"
-                        :precision="0"
-                        :controls="false"
-                        class="mutual-graph__number-input" />
-                    <div class="mutual-graph__helper">
-                        {{ t('view.charts.mutual_friend.force_dialog.repulsion_help') }}
-                    </div>
-                </el-form-item>
-                <el-form-item :label="t('view.charts.mutual_friend.force_dialog.edge_length_min')">
-                    <el-input-number
-                        v-model="forceForm.edgeLengthMin"
-                        :precision="0"
-                        :controls="false"
-                        class="mutual-graph__number-input" />
-                    <div class="mutual-graph__helper">
-                        {{ t('view.charts.mutual_friend.force_dialog.edge_length_min_help') }}
-                    </div>
-                </el-form-item>
-                <el-form-item :label="t('view.charts.mutual_friend.force_dialog.edge_length_max')">
-                    <el-input-number
-                        v-model="forceForm.edgeLengthMax"
-                        :precision="0"
-                        :controls="false"
-                        class="mutual-graph__number-input" />
-                    <div class="mutual-graph__helper">
-                        {{ t('view.charts.mutual_friend.force_dialog.edge_length_max_help') }}
-                    </div>
-                </el-form-item>
-                <el-form-item :label="t('view.charts.mutual_friend.force_dialog.gravity')">
-                    <el-input-number
-                        v-model="forceForm.gravity"
-                        :max="1"
-                        :step="0.1"
-                        :precision="1"
-                        :controls="false"
-                        class="mutual-graph__number-input" />
-                    <div class="mutual-graph__helper">
-                        {{ t('view.charts.mutual_friend.force_dialog.gravity_help') }}
-                    </div>
-                </el-form-item>
-            </el-form>
+            <FieldGroup class="mutual-graph__force-form">
+                <Field>
+                    <FieldLabel>{{ t('view.charts.mutual_friend.force_dialog.repulsion') }}</FieldLabel>
+                    <FieldContent>
+                        <NumberField
+                            v-model="forceForm.repulsion"
+                            :step="1"
+                            :format-options="{ maximumFractionDigits: 0 }"
+                            class="mutual-graph__number-input">
+                            <NumberFieldContent>
+                                <NumberFieldInput />
+                            </NumberFieldContent>
+                        </NumberField>
+                        <FieldDescription class="mutual-graph__helper">
+                            {{ t('view.charts.mutual_friend.force_dialog.repulsion_help') }}
+                        </FieldDescription>
+                    </FieldContent>
+                </Field>
+                <Field>
+                    <FieldLabel>{{ t('view.charts.mutual_friend.force_dialog.edge_length_min') }}</FieldLabel>
+                    <FieldContent>
+                        <NumberField
+                            v-model="forceForm.edgeLengthMin"
+                            :step="1"
+                            :format-options="{ maximumFractionDigits: 0 }"
+                            class="mutual-graph__number-input">
+                            <NumberFieldContent>
+                                <NumberFieldInput />
+                            </NumberFieldContent>
+                        </NumberField>
+                        <FieldDescription class="mutual-graph__helper">
+                            {{ t('view.charts.mutual_friend.force_dialog.edge_length_min_help') }}
+                        </FieldDescription>
+                    </FieldContent>
+                </Field>
+                <Field>
+                    <FieldLabel>{{ t('view.charts.mutual_friend.force_dialog.edge_length_max') }}</FieldLabel>
+                    <FieldContent>
+                        <NumberField
+                            v-model="forceForm.edgeLengthMax"
+                            :step="1"
+                            :format-options="{ maximumFractionDigits: 0 }"
+                            class="mutual-graph__number-input">
+                            <NumberFieldContent>
+                                <NumberFieldInput />
+                            </NumberFieldContent>
+                        </NumberField>
+                        <FieldDescription class="mutual-graph__helper">
+                            {{ t('view.charts.mutual_friend.force_dialog.edge_length_max_help') }}
+                        </FieldDescription>
+                    </FieldContent>
+                </Field>
+                <Field>
+                    <FieldLabel>{{ t('view.charts.mutual_friend.force_dialog.gravity') }}</FieldLabel>
+                    <FieldContent>
+                        <NumberField
+                            v-model="forceForm.gravity"
+                            :max="1"
+                            :step="0.1"
+                            :format-options="{ maximumFractionDigits: 1 }"
+                            class="mutual-graph__number-input">
+                            <NumberFieldContent>
+                                <NumberFieldInput />
+                            </NumberFieldContent>
+                        </NumberField>
+                        <FieldDescription class="mutual-graph__helper">
+                            {{ t('view.charts.mutual_friend.force_dialog.gravity_help') }}
+                        </FieldDescription>
+                    </FieldContent>
+                </Field>
+            </FieldGroup>
 
             <template #footer>
                 <div class="mutual-graph__dialog-footer">
-                    <el-button @click="resetForceSettings">{{
+                    <Button variant="secondary" class="mr-2" @click="resetForceSettings">{{
                         t('view.charts.mutual_friend.force_dialog.reset')
-                    }}</el-button>
-                    <el-button type="primary" :disabled="!graphReady" @click="applyForceSettings">
+                    }}</Button>
+                    <Button :disabled="!graphReady" @click="applyForceSettings">
                         {{ t('view.charts.mutual_friend.force_dialog.apply') }}
-                    </el-button>
+                    </Button>
                 </div>
             </template>
         </el-dialog>
@@ -104,13 +139,24 @@
 
 <script setup>
     import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-    import { ElMessage, ElMessageBox } from 'element-plus';
-    import { Setting } from '@element-plus/icons-vue';
+    import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
+    import { NumberField, NumberFieldContent, NumberFieldInput } from '@/components/ui/number-field';
+    import { Button } from '@/components/ui/button';
+    import { Progress } from '@/components/ui/progress';
+    import { Settings } from 'lucide-vue-next';
+    import { Spinner } from '@/components/ui/spinner';
     import { onBeforeRouteLeave } from 'vue-router';
     import { storeToRefs } from 'pinia';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import { useAppearanceSettingsStore, useChartsStore, useFriendStore, useUserStore } from '../../../stores';
+    import {
+        useAppearanceSettingsStore,
+        useChartsStore,
+        useFriendStore,
+        useModalStore,
+        useUserStore
+    } from '../../../stores';
     import { applyForceOverrides, computeForceOptions, useMutualGraphChart } from '../composables/useMutualGraphChart';
     import { createRateLimiter, executeWithBackoff } from '../../../shared/utils';
     import { database } from '../../../service/database';
@@ -123,6 +169,7 @@
     const { t } = useI18n();
     const friendStore = useFriendStore();
     const userStore = useUserStore();
+    const modalStore = useModalStore();
     const chartsStore = useChartsStore();
     const appearanceStore = useAppearanceSettingsStore();
     const { friends } = storeToRefs(friendStore);
@@ -173,7 +220,6 @@
     const progressPercent = computed(() =>
         totalFriends.value ? Math.min(100, Math.round((fetchState.processedFriends / totalFriends.value) * 100)) : 0
     );
-    const progressStatus = computed(() => (isFetching.value ? 'warning' : undefined));
     const forceDefaults = computed(() =>
         computeForceOptions(graphPayload.value?.nodes ?? [], graphPayload.value?.links ?? [])
     );
@@ -293,13 +339,8 @@
         if (!message) {
             return;
         }
-        ElMessage({
-            // @ts-ignore
-            message,
-            type,
-            duration: 4000,
-            grouping: true
-        });
+        const toastFn = toast[type] ?? toast;
+        toastFn(message, { duration: 4000 });
     }
 
     function createChartInstance() {
@@ -361,39 +402,35 @@
         if (isFetching.value || hasFetched.value || !totalFriends.value) {
             return;
         }
-        try {
-            await ElMessageBox.confirm(
-                t('view.charts.mutual_friend.prompt.message'),
-                t('view.charts.mutual_friend.prompt.title'),
-                {
-                    confirmButtonText: t('view.charts.mutual_friend.prompt.confirm'),
-                    cancelButtonText: t('view.charts.mutual_friend.prompt.cancel'),
-                    type: 'warning'
-                }
-            );
-            await startFetch();
-        } catch {
-            // cancelled
-        }
+
+        modalStore
+            .confirm({
+                description: t('view.charts.mutual_friend.prompt.message'),
+                title: t('view.charts.mutual_friend.prompt.title'),
+                confirmText: t('view.charts.mutual_friend.prompt.confirm'),
+                cancelText: t('view.charts.mutual_friend.prompt.cancel')
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
+
+                await startFetch();
+            });
     }
 
     function promptEnableMutualFriendsSharing() {
-        ElMessageBox.confirm(
-            t('view.charts.mutual_friend.enable_sharing_prompt.message'),
-            t('view.charts.mutual_friend.enable_sharing_prompt.title'),
-            {
-                confirmButtonText: t('view.charts.mutual_friend.enable_sharing_prompt.confirm'),
-                cancelButtonText: t('view.charts.mutual_friend.enable_sharing_prompt.cancel'),
-                type: 'info'
-            }
-        )
-            .then(() => {
+        modalStore
+            .confirm({
+                description: t('view.charts.mutual_friend.enable_sharing_prompt.message'),
+                title: t('view.charts.mutual_friend.enable_sharing_prompt.title'),
+                confirmText: t('view.charts.mutual_friend.enable_sharing_prompt.confirm'),
+                cancelText: t('view.charts.mutual_friend.enable_sharing_prompt.cancel')
+            })
+            .then(({ ok }) => {
+                if (!ok) return;
                 userStore.toggleSharedConnectionsOptOut();
                 promptInitialFetch();
             })
-            .catch(() => {
-                // cancelled
-            });
+            .catch(() => {});
     }
 
     function cancelFetch() {
@@ -613,7 +650,7 @@
 
         const hasInvalid = [repulsion, minEdge, maxEdge, gravity].some((entry) => entry.invalid);
         if (hasInvalid) {
-            ElMessage.error(t('view.charts.mutual_friend.force_dialog.invalid_input'));
+            toast.error(t('view.charts.mutual_friend.force_dialog.invalid_input'));
             return;
         }
 

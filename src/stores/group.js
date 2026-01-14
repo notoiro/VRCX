@@ -1,6 +1,6 @@
 import { nextTick, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 
 import {
     groupRequest,
@@ -17,6 +17,7 @@ import { database } from '../service/database.js';
 import { groupDialogFilterOptions } from '../shared/constants/';
 import { useGameStore } from './game';
 import { useInstanceStore } from './instance';
+import { useModalStore } from './modal';
 import { useNotificationStore } from './notification';
 import { useUserStore } from './user';
 import { watchState } from '../service/watchState';
@@ -30,6 +31,7 @@ export const useGroupStore = defineStore('Group', () => {
     const gameStore = useGameStore();
     const userStore = useUserStore();
     const notificationStore = useNotificationStore();
+    const modalStore = useModalStore();
 
     let cachedGroups = new Map();
 
@@ -37,7 +39,7 @@ export const useGroupStore = defineStore('Group', () => {
         visible: false,
         loading: false,
         isGetGroupDialogGroupLoading: false,
-        treeData: [],
+        treeData: {},
         id: '',
         inGroup: false,
         ownerDisplayName: '',
@@ -130,7 +132,7 @@ export const useGroupStore = defineStore('Group', () => {
         D.id = groupId;
         D.inGroup = false;
         D.ownerDisplayName = '';
-        D.treeData = [];
+        D.treeData = {};
         D.announcement = {};
         D.posts = [];
         D.postsFiltered = [];
@@ -150,10 +152,7 @@ export const useGroupStore = defineStore('Group', () => {
             .catch((err) => {
                 D.loading = false;
                 D.visible = false;
-                ElMessage({
-                    message: 'Failed to load group',
-                    type: 'error'
-                });
+                toast.error('Failed to load group');
                 throw err;
             })
             .then((args) => {
@@ -557,16 +556,13 @@ export const useGroupStore = defineStore('Group', () => {
     }
 
     function leaveGroupPrompt(groupId) {
-        ElMessageBox.confirm(
-            'Are you sure you want to leave this group?',
-            'Confirm',
-            {
-                confirmButtonText: 'Confirm',
-                cancelButtonText: 'Cancel',
-                type: 'info'
-            }
-        )
-            .then(() => {
+        modalStore
+            .confirm({
+                description: 'Are you sure you want to leave this group?',
+                title: 'Confirm'
+            })
+            .then(({ ok }) => {
+                if (!ok) return;
                 leaveGroup(groupId);
             })
             .catch(() => {});
@@ -596,10 +592,7 @@ export const useGroupStore = defineStore('Group', () => {
             })
             .then((args) => {
                 handleGroupMemberProps(args);
-                ElMessage({
-                    message: 'Group visibility updated',
-                    type: 'success'
-                });
+                toast.success('Group visibility updated');
                 return args;
             });
     }
@@ -611,10 +604,7 @@ export const useGroupStore = defineStore('Group', () => {
             })
             .then((args) => {
                 handleGroupMemberProps(args);
-                ElMessage({
-                    message: 'Group subscription updated',
-                    type: 'success'
-                });
+                toast.success('Group subscription updated');
                 return args;
             });
     }

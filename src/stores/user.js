@@ -1,12 +1,12 @@
 import { computed, reactive, ref, shallowReactive, watch } from 'vue';
-import { ElMessage } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 
 import Noty from 'noty';
 
 import {
     arraysMatch,
-    buildTreeData,
+    compareByCreatedAt,
     compareByDisplayName,
     compareByLocationAt,
     compareByName,
@@ -30,6 +30,7 @@ import {
 import { processBulk, request } from '../service/request';
 import { AppDebug } from '../service/appConfig';
 import { database } from '../service/database';
+import { formatJsonVars } from '../shared/utils/base/ui';
 import { useAppearanceSettingsStore } from './settings/appearance';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
@@ -229,7 +230,7 @@ export const useUserStore = defineStore('User', () => {
         },
         avatarSorting: 'update',
         avatarReleaseStatus: 'all',
-        treeData: [],
+        treeData: {},
         memo: '',
         $avatarInfo: {
             ownerId: '',
@@ -768,7 +769,7 @@ export const useUserStore = defineStore('User', () => {
         }
         const D = userDialog.value;
         D.id = userId;
-        D.treeData = [];
+        D.treeData = {};
         D.memo = '';
         D.note = '';
         getUserMemo(userId).then((memo) => {
@@ -842,10 +843,7 @@ export const useUserStore = defineStore('User', () => {
             .catch((err) => {
                 D.loading = false;
                 D.visible = false;
-                ElMessage({
-                    message: 'Failed to load user',
-                    type: 'error'
-                });
+                toast.error('Failed to load user');
                 throw err;
             })
             .then((args) => {
@@ -1165,6 +1163,8 @@ export const useUserStore = defineStore('User', () => {
         const D = userDialog.value;
         if (D.avatarSorting === 'update') {
             array.sort(compareByUpdatedAt);
+        } else if (D.avatarSorting === 'createdAt') {
+            array.sort(compareByCreatedAt);
         } else {
             array.sort(compareByName);
         }
@@ -1218,10 +1218,7 @@ export const useUserStore = defineStore('User', () => {
                             return;
                         }
                     }
-                    ElMessage({
-                        message: 'Own avatar not found',
-                        type: 'error'
-                    });
+                    toast.error('Own avatar not found');
                 }
             }
         });
@@ -1230,14 +1227,13 @@ export const useUserStore = defineStore('User', () => {
     function refreshUserDialogTreeData() {
         const D = userDialog.value;
         if (D.id === currentUser.value.id) {
-            const treeData = {
+            D.treeData = formatJsonVars({
                 ...currentUser.value,
                 ...D.ref
-            };
-            D.treeData = buildTreeData(treeData);
+            });
             return;
         }
-        D.treeData = buildTreeData(D.ref);
+        D.treeData = formatJsonVars(D.ref);
     }
 
     async function lookupUser(ref) {

@@ -1,6 +1,6 @@
 import { computed, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import {
@@ -26,6 +26,7 @@ import { useFeedStore } from './feed';
 import { useGeneralSettingsStore } from './settings/general';
 import { useGroupStore } from './group';
 import { useLocationStore } from './location';
+import { useModalStore } from './modal';
 import { useNotificationStore } from './notification';
 import { useSharedFeedStore } from './sharedFeed';
 import { useUiStore } from './ui';
@@ -50,6 +51,7 @@ export const useFriendStore = defineStore('Friend', () => {
     const authStore = useAuthStore();
     const locationStore = useLocationStore();
     const favoriteStore = useFavoriteStore();
+    const modalStore = useModalStore();
     const { t } = useI18n();
 
     const state = reactive({
@@ -87,16 +89,8 @@ export const useFriendStore = defineStore('Friend', () => {
                     !(filter.value && row.type === 'Unfriend')
             }
         ],
-        tableProps: {
-            stripe: true,
-            size: 'small',
-            defaultSort: null
-        },
         pageSize: 20,
-        pageSizeLinked: true,
-        paginationProps: {
-            layout: 'sizes,prev,pager,next,total'
-        }
+        pageSizeLinked: true
     });
 
     const vipFriends = computed(() => {
@@ -860,11 +854,11 @@ export const useFriendStore = defineStore('Friend', () => {
         reconnectWebSocket();
     }
 
-    function updateOnlineFriendCounter() {
+    function updateOnlineFriendCounter(forceUpdate = false) {
         const onlineFriendCounts =
             vipFriends.value.length + onlineFriends.value.length;
-        if (onlineFriendCounts !== onlineFriendCount.value) {
-            AppApi.ExecuteVrFeedFunction(
+        if (onlineFriendCounts !== onlineFriendCount.value || forceUpdate) {
+            AppApi.ExecuteVrOverlayFunction(
                 'updateOnlineFriendCount',
                 `${onlineFriendCounts}`
             );
@@ -1585,12 +1579,13 @@ export const useFriendStore = defineStore('Friend', () => {
     }
 
     function confirmDeleteFriend(id) {
-        ElMessageBox.confirm('Continue? Unfriend', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then(async () => {
+        modalStore
+            .confirm({
+                description: 'Continue? Unfriend',
+                title: 'Confirm'
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
                 const args = await friendRequest.deleteFriend({
                     userId: id
                 });
@@ -1614,10 +1609,7 @@ export const useFriendStore = defineStore('Friend', () => {
             }
         } catch (err) {
             if (!AppDebug.dontLogMeOut) {
-                ElMessage({
-                    message: t('message.friend.load_failed'),
-                    type: 'error'
-                });
+                toast.error(t('message.friend.load_failed'));
                 authStore.handleLogoutEvent();
                 throw err;
             }

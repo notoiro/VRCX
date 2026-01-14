@@ -1,6 +1,6 @@
 import { nextTick, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 
 import {
     checkVRChatCache,
@@ -17,6 +17,7 @@ import { database } from '../service/database';
 import { useAdvancedSettingsStore } from './settings/advanced';
 import { useAvatarProviderStore } from './avatarProvider';
 import { useFavoriteStore } from './favorite';
+import { useModalStore } from './modal';
 import { useUserStore } from './user';
 import { useVRCXUpdaterStore } from './vrcxUpdater';
 import { watchState } from '../service/watchState';
@@ -29,6 +30,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
     const vrcxUpdaterStore = useVRCXUpdaterStore();
     const advancedSettingsStore = useAdvancedSettingsStore();
     const userStore = useUserStore();
+    const modalStore = useModalStore();
 
     let cachedAvatarModerations = new Map();
     let cachedAvatars = new Map();
@@ -133,6 +135,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
         }
         favoriteStore.applyFavorite('avatar', ref.id);
         if (favoriteStore.localAvatarFavoritesList.includes(ref.id)) {
+            const avatarRef = ref;
             for (
                 let i = 0;
                 i < favoriteStore.localAvatarFavoriteGroups.length;
@@ -147,16 +150,17 @@ export const useAvatarStore = defineStore('Avatar', () => {
                     j < favoriteStore.localAvatarFavorites[groupName].length;
                     ++j
                 ) {
-                    const ref =
+                    const favoriteRef =
                         favoriteStore.localAvatarFavorites[groupName][j];
-                    if (ref.id === ref.id) {
-                        favoriteStore.localAvatarFavorites[groupName][j] = ref;
+                    if (favoriteRef.id === avatarRef.id) {
+                        favoriteStore.localAvatarFavorites[groupName][j] =
+                            avatarRef;
                     }
                 }
             }
 
             // update db cache
-            database.addAvatarToCache(ref);
+            database.addAvatarToCache(avatarRef);
         }
         return ref;
     }
@@ -386,12 +390,13 @@ export const useAvatarStore = defineStore('Avatar', () => {
     }
 
     function promptClearAvatarHistory() {
-        ElMessageBox.confirm('Continue? Clear Avatar History', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then(() => {
+        modalStore
+            .confirm({
+                description: 'Continue? Clear Avatar History',
+                title: 'Confirm'
+            })
+            .then(({ ok }) => {
+                if (!ok) return;
                 clearAvatarHistory();
             })
             .catch(() => {});
@@ -468,10 +473,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
             } catch (err) {
                 const msg = `Avatar search failed for ${search} with ${avatarProviderStore.avatarRemoteDatabaseProvider}\n${err}`;
                 console.error(msg);
-                ElMessage({
-                    message: msg,
-                    type: 'error'
-                });
+                toast.error(msg);
             }
         } else if (type === 'authorId') {
             const length =
@@ -546,21 +548,19 @@ export const useAvatarStore = defineStore('Avatar', () => {
         } catch (err) {
             const msg = `Avatar lookup failed for ${authorId} with ${url}\n${err}`;
             console.error(msg);
-            ElMessage({
-                message: msg,
-                type: 'error'
-            });
+            toast.error(msg);
         }
         return avatars;
     }
 
     function selectAvatarWithConfirmation(id) {
-        ElMessageBox.confirm(`Continue? Select Avatar`, 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info'
-        })
-            .then(() => {
+        modalStore
+            .confirm({
+                description: 'Continue? Select Avatar',
+                title: 'Confirm'
+            })
+            .then(({ ok }) => {
+                if (!ok) return;
                 selectAvatarWithoutConfirmation(id);
             })
             .catch(() => {});
@@ -568,10 +568,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
 
     async function selectAvatarWithoutConfirmation(id) {
         if (userStore.currentUser.currentAvatar === id) {
-            ElMessage({
-                message: 'Avatar already selected',
-                type: 'info'
-            });
+            toast.info('Avatar already selected');
             return;
         }
         return avatarRequest
@@ -579,10 +576,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
                 avatarId: id
             })
             .then(() => {
-                ElMessage({
-                    message: 'Avatar changed',
-                    type: 'success'
-                });
+                toast.success('Avatar changed');
             });
     }
 
@@ -614,10 +608,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
     ) {
         const fileId = extractFileId(currentAvatarImageUrl);
         if (!fileId) {
-            ElMessage({
-                message: 'Sorry, the author is unknown',
-                type: 'error'
-            });
+            toast.error('Sorry, the author is unknown');
         } else if (refUserId === userStore.currentUser.id) {
             showAvatarDialog(userStore.currentUser.currentAvatar);
         } else {
@@ -637,16 +628,11 @@ export const useAvatarStore = defineStore('Avatar', () => {
             }
             if (!avatarId) {
                 if (avatarInfo.ownerId === refUserId) {
-                    ElMessage({
-                        message:
-                            "It's personal (own) avatar or not found in avatar database",
-                        type: 'warning'
-                    });
+                    toast.warning(
+                        "It's personal (own) avatar or not found in avatar database"
+                    );
                 } else {
-                    ElMessage({
-                        message: 'Avatar not found in avatar database',
-                        type: 'warning'
-                    });
+                    toast.warning('Avatar not found in avatar database');
                     userStore.showUserDialog(avatarInfo.ownerId);
                 }
             }

@@ -1,6 +1,6 @@
 import { reactive, ref, shallowReactive, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 
 import dayjs from 'dayjs';
 
@@ -22,6 +22,7 @@ import { useGameStore } from './game';
 import { useGeneralSettingsStore } from './settings/general';
 import { useInstanceStore } from './instance';
 import { useLocationStore } from './location';
+import { useModalStore } from './modal';
 import { useNotificationStore } from './notification';
 import { usePhotonStore } from './photon';
 import { useSharedFeedStore } from './sharedFeed';
@@ -53,6 +54,7 @@ export const useGameLogStore = defineStore('GameLog', () => {
     const galleryStore = useGalleryStore();
     const photonStore = usePhotonStore();
     const sharedFeedStore = useSharedFeedStore();
+    const modalStore = useModalStore();
 
     const state = reactive({
         lastLocationAvatarList: new Map()
@@ -63,18 +65,8 @@ export const useGameLogStore = defineStore('GameLog', () => {
         loading: false,
         search: '',
         filter: [],
-        tableProps: {
-            stripe: true,
-            size: 'small',
-            defaultSort: null,
-            rowKey: (row) =>
-                `${row.type}:${row.rowId ?? row.uid ?? row.displayName + row.location + row.time}:${row.created_at ?? ''}`
-        },
         pageSize: 20,
         pageSizeLinked: true,
-        paginationProps: {
-            layout: 'sizes,prev,pager,next,total'
-        },
         vip: false
     });
 
@@ -103,7 +95,10 @@ export const useGameLogStore = defineStore('GameLog', () => {
             gameLogTable.value.data.length = 0;
             gameLogSessionTable.value = [];
             if (isLoggedIn) {
-                initGameLogTable();
+                // wait for friends to load, silly but works
+                setTimeout(() => {
+                    initGameLogTable();
+                }, 800);
             }
         },
         { flush: 'sync' }
@@ -351,11 +346,18 @@ export const useGameLogStore = defineStore('GameLog', () => {
             gameLogTable.value.filter,
             vipList
         );
+
+        for (const row of rows) {
+            row.isFriend = gameLogIsFriend(row);
+            row.isFavorite = gameLogIsFavorite(row);
+        }
         gameLogTable.value.data = shallowReactive(rows);
         gameLogTable.value.loading = false;
     }
 
     function addGameLog(entry) {
+        entry.isFriend = gameLogIsFriend(entry);
+        entry.isFavorite = gameLogIsFavorite(entry);
         gameLogSessionTable.value.push(entry);
         sweepGameLogSessionTable();
         sharedFeedStore.updateSharedFeed(false);
@@ -395,10 +397,7 @@ export const useGameLogStore = defineStore('GameLog', () => {
         if (!gameLogSearch(entry)) {
             return;
         }
-        gameLogTable.value.data.push({
-            ...entry,
-            uid: crypto.randomUUID()
-        });
+        gameLogTable.value.data.push(entry);
         sweepGameLog();
         uiStore.notifyMenu('game-log');
     }
@@ -1410,23 +1409,20 @@ export const useGameLogStore = defineStore('GameLog', () => {
 
     async function disableGameLogDialog() {
         if (gameStore.isGameRunning) {
-            ElMessage({
-                message:
-                    'VRChat needs to be closed before this option can be changed',
-                type: 'error'
-            });
+            toast.error(
+                'VRChat needs to be closed before this option can be changed'
+            );
             return;
         }
         if (!advancedSettingsStore.gameLogDisabled) {
-            ElMessageBox.confirm('Continue? Disable GameLog', 'Confirm', {
-                confirmButtonText: 'Confirm',
-                cancelButtonText: 'Cancel',
-                type: 'info'
-            })
-                .then(({ action }) => {
-                    if (action === 'confirm') {
-                        advancedSettingsStore.setGameLogDisabled();
-                    }
+            modalStore
+                .confirm({
+                    description: 'Continue? Disable GameLog',
+                    title: 'Confirm'
+                })
+                .then(({ ok }) => {
+                    if (!ok) return;
+                    advancedSettingsStore.setGameLogDisabled();
                 })
                 .catch(() => {});
         } else {
@@ -1439,6 +1435,10 @@ export const useGameLogStore = defineStore('GameLog', () => {
             gameLogTable.value.search,
             gameLogTable.value.filter
         );
+        for (const row of rows) {
+            row.isFriend = gameLogIsFriend(row);
+            row.isFavorite = gameLogIsFavorite(row);
+        }
         gameLogTable.value.data = shallowReactive(rows);
     }
 

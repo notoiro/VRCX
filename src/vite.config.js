@@ -6,6 +6,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
 
 import { languageCodes } from './localization/locales';
 
@@ -60,12 +61,16 @@ export default defineConfig(({ mode }) => {
         .readFileSync(new URL('../Version', import.meta.url), 'utf-8')
         .trim();
 
-    const nightly = version.split('-').at(-1).length === 7;
+    const nightly =
+        mode === 'development' || version.split('-').at(-1).length === 7;
 
     return {
         base: '',
         plugins: [
             vue(),
+            vueJsx({
+                tsTransform: 'built-in'
+            }),
             tailwindcss(),
             buildAndUploadSourceMaps &&
                 import('@sentry/vite-plugin').then(({ sentryVitePlugin }) =>
@@ -82,6 +87,11 @@ export default defineConfig(({ mode }) => {
                     })
                 )
         ],
+        resolve: {
+            alias: {
+                '@': resolve(import.meta.dirname, '.')
+            }
+        },
         css: {
             transformer: 'lightningcss',
             lightningcss: {

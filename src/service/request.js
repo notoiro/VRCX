@@ -1,10 +1,11 @@
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { toast } from 'vue-sonner';
 
 import Noty from 'noty';
 
 import {
     useAuthStore,
     useAvatarStore,
+    useModalStore,
     useNotificationStore,
     useUpdateLoopStore,
     useUserStore
@@ -32,6 +33,7 @@ export function request(endpoint, options) {
     const userStore = useUserStore();
     const avatarStore = useAvatarStore();
     const authStore = useAuthStore();
+    const modalStore = useModalStore();
     const notificationStore = useNotificationStore();
     const updateLoopStore = useUpdateLoopStore();
     if (
@@ -186,10 +188,10 @@ export function request(endpoint, options) {
                 }
             }
             if (status === 403 && endpoint === 'config') {
-                ElMessageBox.alert(
-                    t('api.error.message.vpn_in_use'),
-                    `403 ${t('api.error.message.login_error')}`
-                ).catch(() => {});
+                modalStore.alert({
+                    description: t('api.error.message.vpn_in_use'),
+                    title: `403 ${t('api.error.message.login_error')}`
+                });
                 authStore.handleLogoutEvent();
                 $throw(403, endpoint);
             }
@@ -198,10 +200,7 @@ export function request(endpoint, options) {
                 status === 404 &&
                 endpoint?.startsWith('avatars/')
             ) {
-                ElMessage({
-                    message: t('message.api_handler.avatar_private_or_deleted'),
-                    type: 'error'
-                });
+                toast.error(t('message.api_handler.avatar_private_or_deleted'));
                 avatarStore.avatarDialog.visible = false;
                 $throw(404, data.error?.message || '', endpoint);
             }

@@ -3,11 +3,11 @@
         <div v-if="!text" class="transparent">-</div>
         <div v-show="text" class="flex items-center">
             <div v-if="region" :class="['flags', 'mr-1.5', region]"></div>
-            <el-tooltip
+            <TooltipWrapper
                 :content="`${t('dialog.new_instance.instance_id')}: #${instanceName}`"
-                :disabled="!instanceName"
-                :show-after="300"
-                placement="top">
+                :disabled="!instanceName || showInstanceIdInLocation"
+                :delay-duration="300"
+                side="top">
                 <div
                     :class="[
                       'x-location',
@@ -18,14 +18,17 @@
                     @click="handleShowWorldDialog">
                     <el-icon :class="['is-loading']" class="mr-1" v-if="isTraveling"><Loading /></el-icon>
                     <span class="min-w-0 truncate">{{ text }}</span>
+                    <span v-if="showInstanceIdInLocation && instanceName" class="ml-1 whitespace-nowrap">{{
+                        ` · #${instanceName}`
+                    }}</span>
                     <span v-if="groupName" class="ml-0.5 whitespace-nowrap x-link" @click.stop="handleShowGroupDialog">
                         ({{ groupName }})
                     </span>
                 </div>
-            </el-tooltip>
-            <el-tooltip v-if="isClosed" :content="t('dialog.user.info.instance_closed')">
+            </TooltipWrapper>
+            <TooltipWrapper v-if="isClosed" :content="t('dialog.user.info.instance_closed')">
                 <el-icon :class="['inline-block', 'ml-5']" style="color: lightcoral"><WarnTriangleFilled /></el-icon>
-            </el-tooltip>
+            </TooltipWrapper>
             <el-icon v-if="strict" :class="['inline-block', 'ml-5']"><Lock /></el-icon>
         </div>
     </div>
@@ -37,7 +40,13 @@
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
-    import { useGroupStore, useInstanceStore, useSearchStore, useWorldStore } from '../stores';
+    import {
+        useAppearanceSettingsStore,
+        useGroupStore,
+        useInstanceStore,
+        useSearchStore,
+        useWorldStore
+    } from '../stores';
     import { getGroupName, getWorldName, parseLocation } from '../shared/utils';
     import { accessTypeLocaleKeyMap } from '../shared/constants';
 
@@ -49,6 +58,7 @@
     const { verifyShortName } = useSearchStore();
     const { cachedInstances } = useInstanceStore();
     const { lastInstanceApplied } = storeToRefs(useInstanceStore());
+    const { showInstanceIdInLocation } = storeToRefs(useAppearanceSettingsStore());
 
     const props = defineProps({
         location: String,
@@ -204,10 +214,14 @@
         }
     }
 
-    function translateAccessType(accessTypeName) {
-        const key = accessTypeLocaleKeyMap[accessTypeName];
+    function translateAccessType(accessTypeNameRaw) {
+        const key = accessTypeLocaleKeyMap[accessTypeNameRaw];
         if (!key) {
-            return accessTypeName;
+            return accessTypeNameRaw;
+        }
+        if (accessTypeNameRaw === 'groupPublic' || accessTypeNameRaw === 'groupPlus') {
+            const groupKey = accessTypeLocaleKeyMap['group'];
+            return t(groupKey) + ' ' + t(key);
         }
         return t(key);
     }

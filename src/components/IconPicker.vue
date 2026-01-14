@@ -1,51 +1,55 @@
 <template>
-    <el-popover v-model:visible="visible" trigger="click" placement="bottom-start" :width="620">
-        <template #reference>
-            <el-button class="icon-picker__trigger" plain>
-                <i v-if="modelValue" :class="modelValue"></i>
-                <span>{{ t('nav_menu.icon_picker.pick_icon') }}</span>
-            </el-button>
-        </template>
-        <div class="icon-picker">
-            <el-input
-                v-model="search"
-                clearable
-                class="icon-picker__search"
-                :placeholder="t('nav_menu.icon_picker.search_placeholder')" />
-            <el-scrollbar v-if="filteredCategories.length" height="600px" class="icon-picker__scroll">
-                <div v-for="category in filteredCategories" :key="category.name" class="icon-picker__category">
-                    <div class="icon-picker__category-title">
-                        {{ category.name }}
-                    </div>
-                    <div class="icon-picker__grid">
-                        <div v-for="group in category.groups" :key="group.id" class="icon-picker__group">
-                            <div class="icon-picker__group-label">
-                                {{ group.label }}
-                            </div>
-                            <div class="icon-picker__variants">
-                                <button
-                                    v-for="variant in group.variants"
-                                    :key="variant.className"
-                                    type="button"
-                                    class="icon-picker__variant"
-                                    :class="{ 'is-active': variant.className === modelValue }"
-                                    :title="group.tooltip"
-                                    @click="handleSelect(variant.className)">
-                                    <i :class="[variant.className, 'ri-2x']"></i>
-                                </button>
+    <Popover v-model:open="visible">
+        <PopoverTrigger asChild>
+            <Button>
+                {{ t('nav_menu.icon_picker.pick_icon') }}
+            </Button>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" align="start" class="w-155">
+            <div class="icon-picker">
+                <InputGroupSearch
+                    v-model="search"
+                    class="icon-picker__search"
+                    :placeholder="t('nav_menu.icon_picker.search_placeholder')" />
+                <el-scrollbar v-if="filteredCategories.length" height="600px" class="icon-picker__scroll">
+                    <div v-for="category in filteredCategories" :key="category.name" class="icon-picker__category">
+                        <div class="icon-picker__category-title">
+                            {{ category.name }}
+                        </div>
+                        <div class="icon-picker__grid">
+                            <div v-for="group in category.groups" :key="group.id" class="icon-picker__group">
+                                <div class="icon-picker__group-label">
+                                    {{ group.label }}
+                                </div>
+                                <div class="icon-picker__variants">
+                                    <button
+                                        v-for="variant in group.variants"
+                                        :key="variant.className"
+                                        type="button"
+                                        class="icon-picker__variant"
+                                        :class="{ 'is-active': variant.className === modelValue }"
+                                        :title="group.tooltip"
+                                        @click="handleSelect(variant.className)">
+                                        <i :class="[variant.className, 'ri-2x']"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </el-scrollbar>
-            <div v-else class="icon-picker__empty">{{ t('nav_menu.icon_picker.no_icon_found') }}</div>
-        </div>
-    </el-popover>
+                </el-scrollbar>
+                <div v-else class="icon-picker__empty">{{ t('nav_menu.icon_picker.no_icon_found') }}</div>
+            </div>
+        </PopoverContent>
+    </Popover>
 </template>
 
 <script setup>
     import { computed, ref, watch } from 'vue';
+    import { Button } from '@/components/ui/button';
+    import { InputGroupSearch } from '@/components/ui/input-group';
     import { useI18n } from 'vue-i18n';
+
+    import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
     import remixIconTags from '../shared/constants/remixIconTags.json';
 
@@ -141,14 +145,6 @@
 </script>
 
 <style scoped>
-    .icon-picker__trigger {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-width: 110px;
-        justify-content: center;
-    }
-
     .icon-picker__trigger i {
         font-size: 16px;
     }

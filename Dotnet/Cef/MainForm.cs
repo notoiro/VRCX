@@ -1,9 +1,3 @@
-// Copyright(c) 2019-2025 pypy, Natsumi and individual contributors.
-// All rights reserved.
-//
-// This work is licensed under the terms of the MIT license.
-// For a copy, see <https://opensource.org/licenses/MIT>.
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -89,7 +83,7 @@ namespace VRCX
             Browser.GotFocus += (_, _) =>
             {
                 if (Browser != null && !Browser.IsLoading && Browser.CanExecuteJavascriptInMainFrame)
-                    Browser.ExecuteScriptAsync("window?.$pinia?.vrcStatus?.onBrowserFocus");
+                    Browser.ExecuteScriptAsync("window?.$pinia?.vrcStatus?.onBrowserFocus();");
             };
 
             JavascriptBindings.ApplyAppJavascriptBindings(Browser.JavascriptObjectRepository);
@@ -243,7 +237,7 @@ namespace VRCX
         {
             Instance.Browser.ShowDevTools();
         }
-        
+
         private void TrayMenu_ForceCrash_Click(object sender, System.EventArgs e)
         {
             Instance.Browser.LoadUrl("chrome://crash");

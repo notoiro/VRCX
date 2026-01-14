@@ -1,27 +1,28 @@
 <template>
     <div style="display: inline-block; margin-left: 5px">
-        <el-tooltip v-if="state.isValidInstance" placement="bottom">
+        <TooltipWrapper v-if="state.isValidInstance" side="bottom">
             <template #content>
                 <div>
                     <span v-if="props.instance.closedAt"
                         >Closed At: {{ formatDateFilter(props.instance.closedAt, 'long') }}<br
                     /></span>
                     <template v-if="state.canCloseInstance">
-                        <el-button
+                        <Button
+                            class="mt-1"
+                            size="sm"
                             :disabled="!!props.instance.closedAt"
-                            size="small"
-                            type="primary"
                             @click="closeInstance(props.location)">
-                            {{ t('dialog.user.info.close_instance') }} </el-button
+                            {{ t('dialog.user.info.close_instance') }} </Button
                         ><br /><br />
                     </template>
                     <span
-                        ><span style="color: var(--el-color-primary)">PC: </span
+                        ><span class="x-tag-platform-pc">PC: </span
                         >{{ props.instance.platforms.standalonewindows }}</span
                     ><br />
                     <span
-                        ><span style="color: var(--el-color-success)">Android: </span
-                        >{{ props.instance.platforms.android }}</span
+                        ><span class="x-tag-platform-quest">Android: </span>{{ props.instance.platforms.android }}</span
+                    ><br />
+                    <span><span>iOS: </span>{{ props.instance.platforms.ios }}</span
                     ><br />
                     <span>{{ t('dialog.user.info.instance_game_version') }} {{ props.instance.gameServerVersion }}</span
                     ><br />
@@ -40,7 +41,7 @@
                 </div>
             </template>
             <el-icon><CaretBottom /></el-icon>
-        </el-tooltip>
+        </TooltipWrapper>
         <span v-if="props.location === locationStore.lastLocation.location" style="margin-left: 5px"
             >{{ locationStore.lastLocation.playerList.size }}/{{ props.instance.capacity }}</span
         >
@@ -63,12 +64,13 @@
 </template>
 
 <script setup>
-    import { ElMessage, ElMessageBox } from 'element-plus';
     import { reactive, watch } from 'vue';
+    import { Button } from '@/components/ui/button';
     import { CaretBottom } from '@element-plus/icons-vue';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import { useGroupStore, useInstanceStore, useLocationStore, useUserStore } from '../stores';
+    import { useGroupStore, useInstanceStore, useLocationStore, useModalStore, useUserStore } from '../stores';
     import { formatDateFilter, hasGroupPermission } from '../shared/utils';
     import { miscRequest } from '../api';
 
@@ -78,6 +80,7 @@
     const userStore = useUserStore();
     const groupStore = useGroupStore();
     const instanceStore = useInstanceStore();
+    const modalStore = useModalStore();
 
     const props = defineProps({
         location: String,
@@ -123,16 +126,16 @@
     }
 
     function closeInstance(location) {
-        ElMessageBox.confirm('Continue? Close Instance, nobody will be able to join', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'warning'
-        })
-            .then(async (action) => {
-                if (action !== 'confirm') return;
+        modalStore
+            .confirm({
+                description: 'Continue? Close Instance, nobody will be able to join',
+                title: 'Confirm'
+            })
+            .then(async ({ ok }) => {
+                if (!ok) return;
                 const args = await miscRequest.closeInstance({ location, hardClose: false });
                 if (args.json) {
-                    ElMessage({ message: t('message.instance.closed'), type: 'success' });
+                    toast.success(t('message.instance.closed'));
                     instanceStore.applyInstance(args.json);
                 }
             })

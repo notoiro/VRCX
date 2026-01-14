@@ -6,13 +6,10 @@ import { useRouter } from 'vue-router';
 
 import {
     HueToHex,
-    changeAppDarkStyle,
     changeAppThemeStyle,
     changeHtmlLangAttribute,
-    systemIsDarkMode,
     updateTrustColorClasses
 } from '../../shared/utils/base/ui';
-import { THEME_CONFIG } from '../../shared/constants';
 import { database } from '../../service/database';
 import { getNameColour } from '../../shared/utils';
 import { languageCodes } from '../../localization';
@@ -51,6 +48,7 @@ export const useAppearanceSettingsStore = defineStore(
         const isDarkMode = ref(false);
         const displayVRCPlusIconsAsAvatar = ref(false);
         const hideNicknames = ref(false);
+        const showInstanceIdInLocation = ref(false);
         const isAgeGatedInstancesVisible = ref(false);
         const sortFavorites = ref(true);
         const instanceUsersSortAlphabetical = ref(false);
@@ -67,6 +65,7 @@ export const useAppearanceSettingsStore = defineStore(
             'Sort by Last Active'
         ]);
         const asideWidth = ref(300);
+        const navWidth = ref(240);
         const isSidebarGroupByInstance = ref(true);
         const isHideFriendsInSameInstance = ref(false);
         const isSidebarDivideByFriendGroup = ref(false);
@@ -91,8 +90,8 @@ export const useAppearanceSettingsStore = defineStore(
         const isSideBarTabShow = computed(() => {
             const currentRouteName = router.currentRoute.value?.name;
             return !(
-                currentRouteName === 'friendLocation' ||
-                currentRouteName === 'friendList' ||
+                currentRouteName === 'friends-locations' ||
+                currentRouteName === 'friend-list' ||
                 currentRouteName === 'charts'
             );
         });
@@ -108,6 +107,7 @@ export const useAppearanceSettingsStore = defineStore(
                 themeModeConfig,
                 displayVRCPlusIconsAsAvatarConfig,
                 hideNicknamesConfig,
+                showInstanceIdInLocationConfig,
                 isAgeGatedInstancesVisibleConfig,
                 sortFavoritesConfig,
                 instanceUsersSortAlphabeticalConfig,
@@ -117,6 +117,7 @@ export const useAppearanceSettingsStore = defineStore(
                 dtIsoFormatConfig,
                 sidebarSortMethodsConfig,
                 asideWidthConfig,
+                navWidthConfig,
                 isSidebarGroupByInstanceConfig,
                 isHideFriendsInSameInstanceConfig,
                 isSidebarDivideByFriendGroupConfig,
@@ -133,6 +134,10 @@ export const useAppearanceSettingsStore = defineStore(
                 configRepository.getString('VRCX_ThemeMode', 'system'),
                 configRepository.getBool('displayVRCPlusIconsAsAvatar', true),
                 configRepository.getBool('VRCX_hideNicknames', false),
+                configRepository.getBool(
+                    'VRCX_showInstanceIdInLocation',
+                    false
+                ),
                 configRepository.getBool(
                     'VRCX_isAgeGatedInstancesVisible',
                     true
@@ -158,6 +163,7 @@ export const useAppearanceSettingsStore = defineStore(
                     ])
                 ),
                 configRepository.getInt('VRCX_sidePanelWidth', 300),
+                configRepository.getInt('VRCX_navPanelWidth', 240),
                 configRepository.getBool('VRCX_sidebarGroupByInstance', true),
                 configRepository.getBool(
                     'VRCX_hideFriendsInSameInstance',
@@ -195,22 +201,14 @@ export const useAppearanceSettingsStore = defineStore(
                 await changeAppLanguage(appLanguageConfig);
             }
 
-            const normalizedThemeMode = normalizeThemeMode(themeModeConfig);
-            if (normalizedThemeMode !== themeModeConfig) {
-                configRepository.setString(
-                    'VRCX_ThemeMode',
-                    normalizedThemeMode
-                );
-            }
-
-            themeMode.value = normalizedThemeMode;
-            applyThemeMode();
-            await changeAppThemeStyle(themeMode.value);
+            themeMode.value = themeModeConfig;
+            setThemeMode(themeModeConfig);
             await initPrimaryColor();
 
             displayVRCPlusIconsAsAvatar.value =
                 displayVRCPlusIconsAsAvatarConfig;
             hideNicknames.value = hideNicknamesConfig;
+            showInstanceIdInLocation.value = showInstanceIdInLocationConfig;
             isAgeGatedInstancesVisible.value = isAgeGatedInstancesVisibleConfig;
             sortFavorites.value = sortFavoritesConfig;
             instanceUsersSortAlphabetical.value =
@@ -242,6 +240,7 @@ export const useAppearanceSettingsStore = defineStore(
             }
             trustColor.value = { ...TRUST_COLOR_DEFAULTS };
             asideWidth.value = asideWidthConfig;
+            navWidth.value = clampInt(navWidthConfig, 64, 480);
             isSidebarGroupByInstance.value = isSidebarGroupByInstanceConfig;
             isHideFriendsInSameInstance.value =
                 isHideFriendsInSameInstanceConfig;
@@ -279,12 +278,6 @@ export const useAppearanceSettingsStore = defineStore(
             { flush: 'sync' }
         );
 
-        function normalizeThemeMode(mode) {
-            return Object.prototype.hasOwnProperty.call(THEME_CONFIG, mode)
-                ? mode
-                : 'light';
-        }
-
         /**
          *
          * @param {string} language
@@ -307,21 +300,6 @@ export const useAppearanceSettingsStore = defineStore(
             locale.value = appLanguage.value;
 
             changeHtmlLangAttribute(language);
-        }
-
-        /**
-         * @param {string} newThemeMode
-         * @returns {Promise<void>}
-         */
-        async function saveThemeMode(newThemeMode) {
-            setThemeMode(newThemeMode);
-            await changeThemeMode();
-        }
-
-        async function changeThemeMode() {
-            await changeAppThemeStyle(themeMode.value);
-            vrStore.updateVRConfigVars();
-            await updateTrustColor(undefined, undefined);
         }
 
         /**
@@ -357,10 +335,19 @@ export const useAppearanceSettingsStore = defineStore(
             updateTrustColorClasses(trustColor.value);
         }
 
-        async function userColourInit() {
-            let dictObject = await AppApi.GetColourBulk(
-                Array.from(userStore.cachedUsers.keys())
-            );
+        async function userColourInit(customFunc) {
+            let dictObject = null;
+            if (typeof customFunc === 'function') {
+                dictObject = customFunc(userStore.cachedUsers.keys());
+            } else {
+                dictObject = await AppApi.GetColourBulk(
+                    Array.from(userStore.cachedUsers.keys())
+                );
+            }
+            if (!dictObject) {
+                console.warn('No user colour data found');
+                return;
+            }
             if (LINUX) {
                 // @ts-ignore
                 dictObject = Object.fromEntries(dictObject);
@@ -442,7 +429,7 @@ export const useAppearanceSettingsStore = defineStore(
             .matchMedia('(prefers-color-scheme: dark)')
             .addEventListener('change', async () => {
                 if (themeMode.value === 'system') {
-                    await changeThemeMode();
+                    setThemeMode(themeMode.value);
                 }
             });
 
@@ -450,27 +437,14 @@ export const useAppearanceSettingsStore = defineStore(
          * @param {string} mode
          */
         function setThemeMode(mode) {
-            const normalizedThemeMode = normalizeThemeMode(mode);
-            themeMode.value = normalizedThemeMode;
-            configRepository.setString('VRCX_ThemeMode', normalizedThemeMode);
-            applyThemeMode();
-        }
-        function applyThemeMode() {
-            if (themeMode.value === 'light') {
-                setIsDarkMode(false);
-            } else if (themeMode.value === 'system') {
-                setIsDarkMode(systemIsDarkMode());
-            } else {
-                setIsDarkMode(true);
-            }
-        }
-        /**
-         * @param {boolean} isDark
-         */
-        function setIsDarkMode(isDark) {
+            themeMode.value = mode;
+            configRepository.setString('VRCX_ThemeMode', mode);
+            const { isDark } = changeAppThemeStyle(mode);
             isDarkMode.value = isDark;
-            changeAppDarkStyle(isDark);
+            vrStore.updateVRConfigVars();
+            updateTrustColor(undefined, undefined);
         }
+
         function setDisplayVRCPlusIconsAsAvatar() {
             displayVRCPlusIconsAsAvatar.value =
                 !displayVRCPlusIconsAsAvatar.value;
@@ -490,6 +464,13 @@ export const useAppearanceSettingsStore = defineStore(
         function setHideNicknames() {
             hideNicknames.value = !hideNicknames.value;
             configRepository.setBool('VRCX_hideNicknames', hideNicknames.value);
+        }
+        function setShowInstanceIdInLocation() {
+            showInstanceIdInLocation.value = !showInstanceIdInLocation.value;
+            configRepository.setBool(
+                'VRCX_showInstanceIdInLocation',
+                showInstanceIdInLocation.value
+            );
         }
         function setIsAgeGatedInstancesVisible() {
             isAgeGatedInstancesVisible.value =
@@ -594,7 +575,7 @@ export const useAppearanceSettingsStore = defineStore(
         function toggleNavCollapsed() {
             setNavCollapsed(!isNavCollapsed.value);
         }
-        function setAsideWidth(widthOrArray) {
+        function setNavWidth(widthOrArray) {
             let width = null;
             if (Array.isArray(widthOrArray) && widthOrArray.length) {
                 width = widthOrArray[widthOrArray.length - 1];
@@ -603,10 +584,29 @@ export const useAppearanceSettingsStore = defineStore(
             }
             if (width) {
                 requestAnimationFrame(() => {
-                    asideWidth.value = width;
-                    configRepository.setInt('VRCX_sidePanelWidth', width);
+                    navWidth.value = clampInt(width, 64, 480);
+                    configRepository.setInt(
+                        'VRCX_navPanelWidth',
+                        navWidth.value
+                    );
                 });
             }
+        }
+        function setAsideWidth(widthOrArray) {
+            let width = null;
+            if (Array.isArray(widthOrArray) && widthOrArray.length) {
+                width = widthOrArray[widthOrArray.length - 1];
+            } else if (typeof widthOrArray === 'number') {
+                width = widthOrArray;
+            }
+            if (!Number.isFinite(width) || width === null) {
+                return;
+            }
+            const normalized = Math.max(0, Math.round(width));
+            requestAnimationFrame(() => {
+                asideWidth.value = normalized;
+                configRepository.setInt('VRCX_sidePanelWidth', normalized);
+            });
         }
         function setIsSidebarGroupByInstance() {
             isSidebarGroupByInstance.value = !isSidebarGroupByInstance.value;
@@ -662,7 +662,8 @@ export const useAppearanceSettingsStore = defineStore(
          * @param {object} color
          */
         function setTrustColor(color) {
-            trustColor.value = { ...TRUST_COLOR_DEFAULTS };
+            // @ts-ignore
+            trustColor.value = color;
             configRepository.setString(
                 'VRCX_trustColor',
                 JSON.stringify(trustColor.value)
@@ -800,6 +801,7 @@ export const useAppearanceSettingsStore = defineStore(
             isDarkMode,
             displayVRCPlusIconsAsAvatar,
             hideNicknames,
+            showInstanceIdInLocation,
             isAgeGatedInstancesVisible,
             sortFavorites,
             instanceUsersSortAlphabetical,
@@ -812,6 +814,7 @@ export const useAppearanceSettingsStore = defineStore(
             sidebarSortMethod3,
             sidebarSortMethods,
             asideWidth,
+            navWidth,
             isSidebarGroupByInstance,
             isHideFriendsInSameInstance,
             isSidebarDivideByFriendGroup,
@@ -829,6 +832,7 @@ export const useAppearanceSettingsStore = defineStore(
             setAppLanguage,
             setDisplayVRCPlusIconsAsAvatar,
             setHideNicknames,
+            setShowInstanceIdInLocation,
             setIsAgeGatedInstancesVisible,
             setSortFavorites,
             setInstanceUsersSortAlphabetical,
@@ -840,6 +844,7 @@ export const useAppearanceSettingsStore = defineStore(
             setSidebarSortMethod2,
             setSidebarSortMethod3,
             setSidebarSortMethods,
+            setNavWidth,
             setAsideWidth,
             setIsSidebarGroupByInstance,
             setIsHideFriendsInSameInstance,
@@ -850,10 +855,8 @@ export const useAppearanceSettingsStore = defineStore(
             setRandomUserColours,
             setCompactTableMode,
             setTrustColor,
-            saveThemeMode,
             tryInitUserColours,
             updateTrustColor,
-            changeThemeMode,
             userColourInit,
             applyUserTrustLevel,
             changeAppLanguage,
@@ -861,7 +864,8 @@ export const useAppearanceSettingsStore = defineStore(
             setNotificationIconDot,
             applyCompactTableMode,
             setNavCollapsed,
-            toggleNavCollapsed
+            toggleNavCollapsed,
+            setThemeMode
         };
     }
 );

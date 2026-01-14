@@ -9,37 +9,31 @@
         append-to-body
         @close="cancel">
         <template v-if="!hideUserNotes || (hideUserNotes && hideUserMemos)">
-            <span class="name">{{ t('dialog.user.info.note') }}</span>
+            <span class="name my-2">{{ t('dialog.user.info.note') }}</span>
             <br />
-            <el-input
+            <InputGroupTextareaField
                 v-model="note"
-                class="extra"
-                type="textarea"
-                maxlength="256"
-                show-word-limit
+                :autosize="{ minRows: 6, maxRows: 20 }"
+                :maxlength="256"
                 :rows="6"
-                :autosize="{ minRows: 2, maxRows: 20 }"
                 :placeholder="t('dialog.user.info.note_placeholder')"
-                size="small"
-                resize="none"></el-input>
+                input-class="extra resize-none"
+                class="my-2"
+                show-count />
         </template>
         <template v-if="!hideUserMemos || (hideUserNotes && hideUserMemos)">
             <span class="name">{{ t('dialog.user.info.memo') }}</span>
-            <br />
-            <el-input
+            <InputGroupTextareaField
                 v-model="memo"
-                class="extra"
-                type="textarea"
+                class="extra mt-2"
                 :rows="6"
-                :autosize="{ minRows: 2, maxRows: 20 }"
                 :placeholder="t('dialog.user.info.memo_placeholder')"
-                size="small"
-                resize="none"></el-input>
+                input-class="resize-none min-h-0" />
         </template>
         <template #footer>
             <div class="dialog-footer">
-                <el-button @click="cancel">Cancel</el-button>
-                <el-button type="primary" @click="saveChanges"> Confirm </el-button>
+                <Button variant="secondary" @click="cancel" class="mr-2">Cancel</Button>
+                <Button @click="saveChanges">Confirm</Button>
             </div>
         </template>
     </el-dialog>
@@ -47,6 +41,8 @@
 
 <script setup>
     import { ref, watch } from 'vue';
+    import { Button } from '@/components/ui/button';
+    import { InputGroupTextareaField } from '@/components/ui/input-group';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 

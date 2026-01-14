@@ -1,6 +1,6 @@
 import { computed, reactive, ref, watch } from 'vue';
-import { ElMessage, ElNotification } from 'element-plus';
 import { defineStore } from 'pinia';
+import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import { useFriendStore } from './friend';
@@ -38,12 +38,8 @@ export const useChartsStore = defineStore('Charts', () => {
     const friendCount = computed(() => friendStore.friends.size || 0);
 
     function showInfoMessage(message, type) {
-        ElMessage({
-            message,
-            type,
-            duration: 4000,
-            grouping: true
-        });
+        const toastFn = toast[type] ?? toast;
+        toastFn(message, { duration: 4000 });
     }
 
     watch(
@@ -61,18 +57,16 @@ export const useChartsStore = defineStore('Charts', () => {
                 !mutualGraphStatus.completionNotified
             ) {
                 mutualGraphStatus.completionNotified = true;
-                ElNotification({
-                    title: t(
+                toast.success(
+                    t(
                         'view.charts.mutual_friend.notifications.mutual_friend_graph_ready_title'
                     ),
-                    message: t(
-                        'view.charts.mutual_friend.notifications.mutual_friend_graph_ready_message'
-                    ),
-                    type: 'success',
-                    position: 'top-right',
-                    duration: 5000,
-                    showClose: true
-                });
+                    {
+                        description: t(
+                            'view.charts.mutual_friend.notifications.mutual_friend_graph_ready_message'
+                        )
+                    }
+                );
             }
         }
     );
