@@ -1,14 +1,22 @@
 <template>
-    <div @click="confirm" class="avatar-info">
-        <span v-if="avatarType" :class="color" class="mr-2"><i :class="avatarTypeIcons" /></span>
-        <span class="mr-2">{{ avatarName }}</span>
-        <span v-if="avatarTags" style="color: var(--el-text-color-secondary); font-size: 12px">{{ avatarTags }}</span>
+    <div @click="confirm" class="cursor-pointer w-fit align-top flex items-center">
+        <span class="flex items-center"
+            >{{ avatarName }} <Lock v-if="avatarType && avatarType === '(own)'" class="h-4 w-4 mx-1"
+        /></span>
+        <TooltipWrapper v-if="avatarTags">
+            <template #content>
+                <span class="truncate">{{ avatarTags }}</span>
+            </template>
+            <span style="font-size: 12px" class="truncate">{{ avatarTags }}</span>
+        </TooltipWrapper>
     </div>
 </template>
 
 <script setup>
-    import { computed, ref, watch } from 'vue';
+    import { ref, watch } from 'vue';
+    import { Lock } from 'lucide-vue-next';
 
+    import { TooltipWrapper } from './ui/tooltip';
     import { useAvatarStore } from '../stores';
 
     const avatarStore = useAvatarStore();
@@ -24,22 +32,12 @@
     const avatarName = ref('');
     const avatarType = ref('');
     const avatarTags = ref('');
-    const color = ref('');
     let ownerId = '';
-
-    const avatarTypeIcons = computed(() => {
-        return avatarType.value === '(own)'
-            ? 'ri-lock-line'
-            : avatarType.value === '(public)'
-              ? 'ri-lock-unlock-line'
-              : '';
-    });
 
     const parse = async () => {
         ownerId = '';
         avatarName.value = '';
         avatarType.value = '';
-        color.value = '';
         avatarTags.value = '';
 
         if (!props.imageurl) {
@@ -60,13 +58,10 @@
         }
 
         if (typeof props.userid === 'undefined' || !ownerId) {
-            color.value = '';
             avatarType.value = '';
         } else if (ownerId === props.userid) {
-            color.value = 'avatar-info-own';
             avatarType.value = '(own)';
         } else {
-            color.value = 'avatar-info-public';
             avatarType.value = '(public)';
         }
 

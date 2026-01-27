@@ -27,12 +27,12 @@
             <TooltipWrapper side="bottom" :content="t('view.moderation.refresh_tooltip')">
                 <Button
                     class="rounded-full"
-                    variant="outline"
+                    variant="ghost"
                     size="icon-sm"
                     :disabled="playerModerationTable.loading"
                     @click="refreshPlayerModerations()">
                     <Spinner v-if="playerModerationTable.loading" />
-                    <Refresh v-else />
+                    <RefreshCw v-else />
                 </Button>
             </TooltipWrapper>
         </div>
@@ -52,7 +52,7 @@
     import { computed, ref, watch } from 'vue';
     import { Button } from '@/components/ui/button';
     import { InputGroupField } from '@/components/ui/input-group';
-    import { Refresh } from '@element-plus/icons-vue';
+    import { RefreshCw } from 'lucide-vue-next';
     import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
@@ -112,7 +112,7 @@
     function deletePlayerModerationPrompt(row) {
         modalStore
             .confirm({
-                description: `Continue? Delete Moderation ${row.type}`,
+                description: `Continue? Moderation ${row.type}`,
                 title: 'Confirm'
             })
             .then(({ ok }) => ok && deletePlayerModeration(row))

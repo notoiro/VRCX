@@ -15,7 +15,7 @@
                             :traveling="favorite.ref.travelingToLocation"
                             :link="false" />
                     </div>
-                    <span v-else class="extra">{{ favorite.ref.statusDescription }}</span>
+                    <span v-else class="text-xs text-muted-foreground">{{ favorite.ref.statusDescription }}</span>
                 </div>
             </div>
             <div class="favorites-search-card__actions">
@@ -36,10 +36,10 @@
                             <TooltipWrapper side="left" :content="t('view.favorite.unfavorite_tooltip')">
                                 <Button
                                     size="icon-sm"
-                                    variant="outline"
-                                    class="favorites-search-card__action-btn rounded-full text-xs h-6 w-6"
+                                    variant="ghost"
+                                    class="rounded-full text-xs h-6 w-6"
                                     @click.stop="handleDeleteFavorite">
-                                    <i class="ri-delete-bin-line"></i>
+                                    <Trash2 class="h-4 w-4" />
                                 </Button>
                             </TooltipWrapper>
                         </div>
@@ -50,11 +50,11 @@
                         <TooltipWrapper side="right" :content="t('view.favorite.edit_favorite_tooltip')">
                             <Button
                                 size="icon-sm"
-                                variant="outline"
-                                class="favorites-search-card__action-btn rounded-full text-xs h-6 w-6"
+                                variant="ghost"
+                                class="rounded-full text-xs h-6 w-6"
                                 @click.stop="showFavoriteDialog('friend', favorite.id)"
-                                ><i class="ri-star-line"></i
-                            ></Button>
+                                ><Star class="h-4 w-4"
+                            /></Button>
                         </TooltipWrapper>
                     </div>
                 </template>
@@ -74,7 +74,7 @@
                         size="icon-sm"
                         variant="outline"
                         @click.stop="handleDeleteFavorite">
-                        <i class="ri-delete-bin-line"></i>
+                        <Trash2 class="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -83,6 +83,7 @@
 </template>
 
 <script setup>
+    import { Star, Trash2 } from 'lucide-vue-next';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
     import { computed } from 'vue';

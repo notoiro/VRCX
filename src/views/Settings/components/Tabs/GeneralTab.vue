@@ -6,14 +6,14 @@
                 <div class="x-friend-item" style="cursor: default">
                     <div class="detail">
                         <span class="name">{{ t('view.settings.general.general.version') }}</span>
-                        <span class="extra" v-text="appVersion"></span>
+                        <span class="block truncate text-xs" v-text="appVersion"></span>
                     </div>
                 </div>
                 <div class="x-friend-item" @click="checkForVRCXUpdate">
                     <div class="detail">
                         <span class="name">{{ t('view.settings.general.general.latest_app_version') }}</span>
-                        <span v-if="latestAppVersion" class="extra" v-text="latestAppVersion"></span>
-                        <span v-else class="extra">{{
+                        <span v-if="latestAppVersion" class="block truncate text-xs" v-text="latestAppVersion"></span>
+                        <span v-else class="block truncate text-xs">{{
                             t('view.settings.general.general.latest_app_version_refresh')
                         }}</span>
                     </div>
@@ -21,13 +21,13 @@
                 <div class="x-friend-item" @click="openExternalLink(links.github)">
                     <div class="detail">
                         <span class="name">{{ t('view.settings.general.general.repository_url') }}</span>
-                        <span v-once class="extra">{{ links.github }}</span>
+                        <span v-once class="block truncate text-xs">{{ links.github }}</span>
                     </div>
                 </div>
                 <div class="x-friend-item" @click="openExternalLink(links.discord)">
                     <div class="detail">
                         <span class="name">{{ t('view.settings.general.general.support') }}</span>
-                        <span v-once class="extra">{{ links.discord }}</span>
+                        <span v-once class="block truncate text-xs">{{ links.discord }}</span>
                     </div>
                 </div>
             </div>
@@ -42,9 +42,8 @@
                     t('view.settings.general.vrcx_updater.change_build')
                 }}</Button>
             </div>
-            <div v-if="!noUpdater" class="options-container-item">
+            <div v-if="!noUpdater" class="text-sm mt-2 flex flex-col align-baseline">
                 <span class="name">{{ t('view.settings.general.vrcx_updater.update_action') }}</span>
-                <br />
                 <ToggleGroup
                     type="single"
                     required
@@ -244,7 +243,7 @@
                         side="top"
                         style="margin-left: 5px"
                         :content="t('view.settings.general.automation.auto_invite_request_accept_tooltip')">
-                        <el-icon><InfoFilled /></el-icon>
+                        <Info class="inline-block" />
                     </TooltipWrapper>
                 </span>
                 <br />
@@ -283,8 +282,10 @@
             <div class="options-container-item" style="display: block">
                 <p>
                     &copy; 2019-2026
-                    <a class="x-link" @click="openExternalLink('https://github.com/pypy-vrc')">pypy</a> &amp;
-                    <a class="x-link" @click="openExternalLink('https://github.com/Natsumi-sama')">Natsumi</a>
+                    <a class="cursor-pointer" @click="openExternalLink('https://github.com/pypy-vrc')">pypy</a> &amp;
+                    <a class="cursor-pointer" @click="openExternalLink('https://github.com/Natsumi-sama')">Natsumi</a>
+                    &amp;
+                    <a class="cursor-pointer" @click="openExternalLink('https://github.com/Map1en')">Map1en</a>
                 </p>
                 <p>{{ t('view.settings.general.legal_notice.info') }}</p>
                 <p>{{ t('view.settings.general.legal_notice.disclaimer1') }}</p>
@@ -303,7 +304,7 @@
 <script setup>
     import { computed, defineAsyncComponent, ref } from 'vue';
     import { Button } from '@/components/ui/button';
-    import { InfoFilled } from '@element-plus/icons-vue';
+    import { Info } from 'lucide-vue-next';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 

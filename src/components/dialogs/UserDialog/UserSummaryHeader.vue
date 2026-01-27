@@ -4,14 +4,14 @@
             v-if="
                 !userDialog.loading && (userDialog.ref.profilePicOverrideThumbnail || userDialog.ref.profilePicOverride)
             "
-            class="x-link"
+            class="cursor-pointer"
             :src="userDialog.ref.profilePicOverrideThumbnail || userDialog.ref.profilePicOverride"
             style="flex: none; height: 120px; width: 213.33px; border-radius: 12px; object-fit: cover"
             @click="showFullscreenImageDialog(userDialog.ref.profilePicOverride)"
             loading="lazy" />
         <img
             v-else-if="!userDialog.loading"
-            class="x-link"
+            class="cursor-pointer"
             :src="userDialog.ref.currentAvatarThumbnailImageUrl"
             style="flex: none; height: 120px; width: 160px; border-radius: 12px; object-fit: cover"
             @click="showFullscreenImageDialog(userDialog.ref.currentAvatarImageUrl)"
@@ -40,11 +40,11 @@
                                     >
                                 </div>
                             </template>
-                            <el-icon><CaretBottom /></el-icon>
+                            <ChevronDown class="inline-block" />
                         </TooltipWrapper>
                     </template>
                     <span
-                        class="dialog-title"
+                        class="font-bold"
                         style="margin-left: 5px; margin-right: 5px; cursor: pointer"
                         v-text="userDialog.ref.displayName"
                         @click="copyUserDisplayName(userDialog.ref.displayName)"></span>
@@ -79,7 +79,7 @@
                             class="name"
                             :class="userDialog.ref.$trustClass"
                             style="margin-right: 5px; margin-top: 5px">
-                            <i class="ri-shield-line"></i> {{ userDialog.ref.$trustLevel }}
+                            <Shield class="mr-1 h-4 w-4 inline-block" /> {{ userDialog.ref.$trustLevel }}
                         </Badge>
                     </TooltipWrapper>
                     <TooltipWrapper
@@ -91,10 +91,10 @@
                             class="x-tag-age-verification"
                             style="margin-right: 5px; margin-top: 5px">
                             <template v-if="userDialog.ref.ageVerificationStatus === '18+'">
-                                <i class="ri-info-card-line"></i> 18+
+                                <IdCard class="mr-1 h-4 w-4 inline-block" /> 18+
                             </template>
                             <template v-else>
-                                <i class="ri-info-card-line"></i>
+                                <IdCard class="mr-1 h-4 w-4 inline-block" />
                             </template>
                         </Badge>
                     </TooltipWrapper>
@@ -103,7 +103,7 @@
                         side="top"
                         :content="t('dialog.user.tags.friend_number')">
                         <Badge variant="outline" class="x-tag-friend" style="margin-right: 5px; margin-top: 5px">
-                            <i class="ri-user-add-line"></i>
+                            <UserPlus class="mr-1 h-4 w-4 inline-block" />
                             {{ userDialog.ref.$friendNumber ? userDialog.ref.$friendNumber : '' }}
                         </Badge>
                     </TooltipWrapper>
@@ -111,8 +111,11 @@
                         v-if="userDialog.mutualFriendCount"
                         side="top"
                         :content="t('dialog.user.tags.mutual_friends')">
-                        <Badge variant="outline" class="x-tag-mutual-friend" style="margin-right: 5px; margin-top: 5px">
-                            <i class="ri-group-line"></i>
+                        <Badge
+                            variant="outline"
+                            class="x-tag-mutual-friend border-zinc-500/50! dark:border-zinc-400!"
+                            style="margin-right: 5px; margin-top: 5px">
+                            <Users class="mr-1 h-4 w-4 inline-block" />
                             {{ userDialog.mutualFriendCount }}
                         </Badge>
                     </TooltipWrapper>
@@ -140,7 +143,7 @@
 
                     <TooltipWrapper v-if="userDialog.ref.$platform === 'standalonewindows'" side="top" content="PC">
                         <Badge variant="outline" class="x-tag-platform-pc" style="margin-right: 5px; margin-top: 5px">
-                            <i class="ri-computer-line"></i>
+                            <Monitor class="h-4 w-4 x-tag-platform-pc" />
                         </Badge>
                     </TooltipWrapper>
                     <TooltipWrapper v-else-if="userDialog.ref.$platform === 'android'" side="top" content="Android">
@@ -148,13 +151,16 @@
                             variant="outline"
                             class="x-tag-platform-quest"
                             style="margin-right: 5px; margin-top: 5px">
-                            <i class="ri-android-line"></i>
+                            <Smartphone class="h-4 w-4 x-tag-platform-quest" />
                         </Badge>
                     </TooltipWrapper>
                     <TooltipWrapper v-else-if="userDialog.ref.$platform === 'ios'" side="top" content="iOS">
-                        <Badge variant="outline" class="x-tag-platform-ios" style="margin-right: 5px; margin-top: 5px"
-                            ><i class="ri-apple-line"></i
-                        ></Badge>
+                        <Badge
+                            variant="outline"
+                            class="text-[#8e8e93] border-[#8e8e93]"
+                            style="margin-right: 5px; margin-top: 5px">
+                            <Apple class="h-4 w-4 text-[#8e8e93]" />
+                        </Badge>
                     </TooltipWrapper>
                     <Badge
                         v-else-if="userDialog.ref.$platform"
@@ -185,7 +191,7 @@
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <img
-                                        class="x-link x-user-badge"
+                                        class="cursor-pointer hover:grayscale-0"
                                         :src="badge.badgeImageUrl"
                                         style="
                                             flex: none;
@@ -196,13 +202,13 @@
                                             margin-top: 5px;
                                             margin-right: 5px;
                                         "
-                                        :class="{ 'x-user-badge-hidden': badge.hidden }"
+                                        :class="{ grayscale: badge.hidden }"
                                         loading="lazy" />
                                 </PopoverTrigger>
                                 <PopoverContent side="bottom" class="w-75">
                                     <img
                                         :src="badge.badgeImageUrl"
-                                        :class="['x-link', 'x-popover-image']"
+                                        :class="['cursor-pointer', 'max-w-full', 'max-h-full']"
                                         @click="showFullscreenImageDialog(badge.badgeImageUrl)"
                                         loading="lazy" />
                                     <br />
@@ -247,7 +253,7 @@
 
             <div v-if="userDialog.ref.userIcon" style="flex: none; margin-right: 10px">
                 <img
-                    class="x-link"
+                    class="cursor-pointer"
                     :src="userImage(userDialog.ref, true, '256', true)"
                     style="flex: none; width: 120px; height: 120px; border-radius: 12px; object-fit: cover"
                     @click="showFullscreenImageDialog(userDialog.ref.userIcon)"
@@ -260,7 +266,7 @@
 </template>
 
 <script setup>
-    import { CaretBottom } from '@element-plus/icons-vue';
+    import { Apple, ChevronDown, IdCard, Monitor, Shield, Smartphone, UserPlus, Users } from 'lucide-vue-next';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 

@@ -151,7 +151,7 @@
     function deleteFriendLogPrompt(row) {
         modalStore
             .confirm({
-                description: 'Continue? Delete Log',
+                description: t('confirm.delete_log'),
                 title: 'Confirm'
             })
             .then(({ ok }) => ok && deleteFriendLog(row))
@@ -210,9 +210,3 @@
         table.setPageSize(size);
     });
 </script>
-
-<style scoped>
-    .table-user {
-        color: var(--x-table-user-text-color);
-    }
-</style>

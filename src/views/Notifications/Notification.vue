@@ -60,13 +60,13 @@
                     <TooltipWrapper side="bottom" :content="t('view.notification.refresh_tooltip')">
                         <Button
                             class="rounded-full"
-                            variant="outline"
+                            variant="ghost"
                             size="icon-sm"
                             :disabled="isNotificationsLoading"
                             style="flex: none"
                             @click="refreshNotifications()">
                             <Spinner v-if="isNotificationsLoading" />
-                            <Refresh v-else />
+                            <RefreshCw v-else />
                         </Button>
                     </TooltipWrapper>
                 </div>
@@ -86,7 +86,7 @@
     import { computed, ref, watch } from 'vue';
     import { Button } from '@/components/ui/button';
     import { InputGroupField } from '@/components/ui/input-group';
-    import { Refresh } from '@element-plus/icons-vue';
+    import { RefreshCw } from 'lucide-vue-next';
     import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
@@ -324,8 +324,8 @@
         // FIXME: 메시지 수정
         modalStore
             .confirm({
-                description: 'Continue? Accept Friend Request',
-                title: 'Confirm'
+                description: t('confirm.accept_friend_request'),
+                title: t('confirm.title')
             })
             .then(({ ok }) => {
                 if (!ok) {
@@ -349,8 +349,8 @@
     function acceptRequestInvite(row) {
         modalStore
             .confirm({
-                description: 'Continue? Send Invite',
-                title: 'Confirm'
+                description: t('confirm.send_invite'),
+                title: t('confirm.title')
             })
             .then(({ ok }) => {
                 if (!ok) {
@@ -381,7 +381,7 @@
                                 row.senderUserId
                             )
                             .then((_args) => {
-                                toast('Invite sent');
+                                toast(t('message.invite.sent'));
                                 notificationRequest.hideNotification({
                                     notificationId: row.id
                                 });
@@ -459,8 +459,8 @@
     function hideNotificationPrompt(row) {
         modalStore
             .confirm({
-                description: `Continue? Decline ${row.type}`,
-                title: 'Confirm'
+                description: t('confirm.decline_type', { type: row.type }),
+                title: t('confirm.title')
             })
             .then(({ ok }) => {
                 if (ok) {
@@ -483,8 +483,8 @@
     function deleteNotificationLogPrompt(row) {
         modalStore
             .confirm({
-                description: `Continue? Delete ${row.type}`,
-                title: 'Confirm'
+                description: t('confirm.delete_type', { type: row.type }),
+                title: t('confirm.title')
             })
             .then(({ ok }) => {
                 if (ok) {
@@ -499,17 +499,12 @@
     .button-pd-0 {
         padding: 0;
     }
-    .ml-5 {
-        margin-left: 5px !important; /* due to ".el-button + .el-button" */
-    }
+
     .notification-image {
         flex: none;
         height: 30px;
         width: 30px;
         border-radius: 4px;
         object-fit: cover;
-    }
-    .table-user-text {
-        color: var(--x-table-user-text-color);
     }
 </style>

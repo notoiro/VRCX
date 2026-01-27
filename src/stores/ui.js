@@ -8,8 +8,13 @@ import { AppDebug } from '../service/appConfig';
 import { refreshCustomCss } from '../shared/utils/base/ui';
 import { updateLocalizedStrings } from '../plugin/i18n';
 import { useAppearanceSettingsStore } from './settings/appearance';
+import { useAvatarStore } from './avatar';
+import { useGroupStore } from './group';
+import { useInstanceStore } from './instance';
 import { useNotificationStore } from './notification';
 import { useSearchStore } from './search';
+import { useUserStore } from './user';
+import { useWorldStore } from './world';
 
 export const useUiStore = defineStore('Ui', () => {
     const notificationStore = useNotificationStore();
@@ -27,6 +32,7 @@ export const useUiStore = defineStore('Ui', () => {
     const notifiedMenus = ref([]);
     const shiftHeld = ref(false);
     const trayIconNotify = ref(false);
+    const dialogCrumbs = ref([]);
 
     watch(ctrlR, (isPressed) => {
         if (isPressed) {
@@ -57,6 +63,116 @@ export const useUiStore = defineStore('Ui', () => {
             toast.success('Custom CSS and localization strings refreshed');
         }
     });
+
+    function pushDialogCrumb(type, id, label = '') {
+        if (!type || !id) {
+            return;
+        }
+        const items = dialogCrumbs.value;
+        const last = items[items.length - 1];
+        if (last && last.type === type && last.id === id) {
+            if (label && last.label !== label) {
+                last.label = label;
+            }
+            return;
+        }
+        const existingIndex = items.findIndex(
+            (item) => item.type === type && item.id === id
+        );
+        if (existingIndex !== -1) {
+            items.splice(existingIndex + 1);
+            if (label) {
+                items[existingIndex].label = label;
+            }
+            return;
+        }
+        items.push({ type, id, label: label || id });
+    }
+
+    function setDialogCrumbLabel(type, id, label) {
+        if (!type || !id || !label) {
+            return;
+        }
+        const item = dialogCrumbs.value.find(
+            (entry) => entry.type === type && entry.id === id
+        );
+        if (item) {
+            item.label = label;
+        }
+    }
+
+    function jumpDialogCrumb(index) {
+        if (index < 0 || index >= dialogCrumbs.value.length) {
+            return;
+        }
+        dialogCrumbs.value.splice(index + 1);
+    }
+
+    function clearDialogCrumbs() {
+        dialogCrumbs.value = [];
+    }
+
+    function closeMainDialog() {
+        const userStore = useUserStore();
+        const worldStore = useWorldStore();
+        const avatarStore = useAvatarStore();
+        const groupStore = useGroupStore();
+        const instanceStore = useInstanceStore();
+
+        userStore.userDialog.visible = false;
+        worldStore.worldDialog.visible = false;
+        avatarStore.avatarDialog.visible = false;
+        groupStore.groupDialog.visible = false;
+        instanceStore.hidePreviousInstancesDialogs();
+        clearDialogCrumbs();
+    }
+
+    function openDialog({ type, id, label = '', skipBreadcrumb = false }) {
+        const userStore = useUserStore();
+        const worldStore = useWorldStore();
+        const avatarStore = useAvatarStore();
+        const groupStore = useGroupStore();
+        const instanceStore = useInstanceStore();
+        const isPrevInfo = type === 'previous-instances-info';
+        const isPrevList =
+            type &&
+            type.startsWith('previous-instances-') &&
+            type !== 'previous-instances-info';
+        const hadActiveDialog =
+            dialogCrumbs.value.length > 0 ||
+            userStore.userDialog.visible ||
+            worldStore.worldDialog.visible ||
+            avatarStore.avatarDialog.visible ||
+            groupStore.groupDialog.visible ||
+            (instanceStore.previousInstancesInfoDialog.visible &&
+                !isPrevInfo) ||
+            (instanceStore.previousInstancesListDialog.visible && !isPrevList);
+
+        if (type !== 'user') {
+            userStore.userDialog.visible = false;
+        }
+        if (type !== 'world') {
+            worldStore.worldDialog.visible = false;
+        }
+        if (type !== 'avatar') {
+            avatarStore.avatarDialog.visible = false;
+        }
+        if (type !== 'group') {
+            groupStore.groupDialog.visible = false;
+        }
+        if (!isPrevInfo) {
+            instanceStore.previousInstancesInfoDialog.visible = false;
+        }
+        if (!isPrevList) {
+            instanceStore.previousInstancesListDialog.visible = false;
+        }
+        if (!hadActiveDialog) {
+            clearDialogCrumbs();
+        }
+        if (!skipBreadcrumb) {
+            pushDialogCrumb(type, id, label);
+        }
+    }
 
     // Make sure file drops outside of the screenshot manager don't navigate to the file path dropped.
     // This issue persists on prompts created with prompt(), unfortunately. Not sure how to fix that.
@@ -133,10 +249,17 @@ export const useUiStore = defineStore('Ui', () => {
     return {
         notifiedMenus,
         shiftHeld,
+        dialogCrumbs,
 
         notifyMenu,
         removeNotify,
         showConsole,
-        updateTrayIconNotify
+        updateTrayIconNotify,
+        pushDialogCrumb,
+        setDialogCrumbLabel,
+        jumpDialogCrumb,
+        clearDialogCrumbs,
+        closeMainDialog,
+        openDialog
     };
 });

@@ -7,7 +7,7 @@ import {
     TooltipProvider,
     TooltipTrigger
 } from '../../components/ui/tooltip';
-import { ArrowUpDown } from 'lucide-vue-next';
+import { ArrowUpDown, FileText, Trash2, X } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 
 import { formatDateFilter, openExternalLink } from '../../shared/utils';
@@ -91,7 +91,7 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
                 return (
                     <Badge variant="outline" class="text-muted-foreground">
                         <span
-                            class={isLink ? 'x-link' : undefined}
+                            class={isLink ? 'cursor-pointer' : undefined}
                             onClick={() =>
                                 isLink && showWorldDialog(original.location)
                             }
@@ -111,10 +111,10 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
                 const isFriend = original.isFriend;
                 const isFavorite = original.isFavorite;
                 return (
-                    <span>
+                    <span class="cursor-pointer">
                         {original.displayName ? (
                             <span
-                                class="x-link table-user pr-2.5"
+                                class="cursor-pointer table-user mr-1"
                                 onClick={() => lookupUser(original)}
                             >
                                 {original.displayName}
@@ -183,13 +183,13 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
                         original.videoId !== 'PopcornPalace';
                     const label = original.videoName || original.videoUrl;
                     return (
-                        <span class="block w-full min-w-0 truncate">
+                        <span class="block w-full min-w-0 truncate cursor-pointer">
                             {original.videoId ? (
                                 <span class="mr-1.5">{original.videoId}:</span>
                             ) : null}
                             {showLink ? (
                                 <span
-                                    class="x-link"
+                                    class="cursor-pointer"
                                     onClick={() =>
                                         openExternalLink(original.videoUrl)
                                     }
@@ -208,9 +208,9 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
                     original.type === 'StringLoad'
                 ) {
                     return (
-                        <span class="block w-full min-w-0 truncate">
+                        <span class="block w-full min-w-0 truncate cursor-pointer">
                             <span
-                                class="x-link"
+                                class="cursor-pointer"
                                 onClick={() =>
                                     openExternalLink(original.resourceUrl)
                                 }
@@ -230,7 +230,7 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
                 }
 
                 return (
-                    <span class="x-link block w-full min-w-0 truncate">
+                    <span class="block w-full min-w-0 truncate">
                         {original.data}
                     </span>
                 );
@@ -241,7 +241,6 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
             meta: {
                 class: 'text-right'
             },
-            enableResizing: false,
             size: 90,
             minSize: 90,
             maxSize: 90,
@@ -268,13 +267,11 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
                                         : onDeletePrompt(original)
                                 }
                             >
-                                <i
-                                    class={
-                                        shiftHeld.value
-                                            ? 'ri-close-line text-red-600'
-                                            : 'ri-delete-bin-line'
-                                    }
-                                />
+                                {shiftHeld.value ? (
+                                    <X class="h-4 w-4 text-red-600" />
+                                ) : (
+                                    <Trash2 class="h-4 w-4" />
+                                )}
                             </button>
                         ) : null}
                         {canShowPrevious ? (
@@ -290,7 +287,7 @@ export const createColumns = ({ getCreatedAt, onDelete, onDeletePrompt }) => {
                                                 )
                                             }
                                         >
-                                            <i class="ri-file-list-2-line" />
+                                            <FileText class="h-4 w-4" />
                                         </button>
                                     </TooltipTrigger>
                                     <TooltipContent side="top">

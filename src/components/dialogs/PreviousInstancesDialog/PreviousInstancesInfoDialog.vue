@@ -1,12 +1,9 @@
 <template>
-    <el-dialog
-        :z-index="previousInstancesInfoDialogIndex"
-        :model-value="previousInstancesInfoDialogVisible"
-        :title="t('dialog.previous_instances.info')"
-        width="800px"
-        :fullscreen="fullscreen"
-        destroy-on-close
-        @close="closeDialog">
+    <div>
+        <DialogHeader>
+            <DialogTitle>{{ t('dialog.previous_instances.info') }}</DialogTitle>
+        </DialogHeader>
+
         <DataTableLayout
             class="min-w-0 w-full"
             :table="table"
@@ -26,11 +23,14 @@
                 </div>
             </template>
         </DataTableLayout>
-    </el-dialog>
+    </div>
 </template>
 
 <script setup>
+    defineOptions({ name: 'PreviousInstancesInfoDialog' });
+
     import { computed, nextTick, ref, watch } from 'vue';
+    import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
@@ -40,20 +40,15 @@
     import { InputGroupField } from '../../../components/ui/input-group';
     import { createColumns } from './previousInstancesInfoColumns.jsx';
     import { database } from '../../../service/database';
-    import { getNextDialogIndex } from '../../../shared/utils/base/ui';
     import { useVrcxVueTable } from '../../../lib/table/useVrcxVueTable';
 
     const { lookupUser } = useUserStore();
-    const { previousInstancesInfoDialogVisible, previousInstancesInfoDialogInstanceId } =
-        storeToRefs(useInstanceStore());
+    const { previousInstancesInfoDialog } = storeToRefs(useInstanceStore());
     const { gameLogIsFriend, gameLogIsFavorite } = useGameLogStore();
     const { t } = useI18n();
 
-    const previousInstancesInfoDialogIndex = ref(2000);
-
     const loading = ref(false);
     const rawRows = ref([]);
-    const search = ref('');
     const pageSizes = [10, 25, 50, 100];
     const pageSize = ref(10);
     const tableStyle = { maxHeight: '400px' };
@@ -81,10 +76,10 @@
         strict: false,
         ageGate: false
     });
-    const fullscreen = ref(false);
 
     const { stringComparer } = storeToRefs(useSearchStore());
     const vrcxStore = useVrcxStore();
+    const search = ref('');
 
     const displayRows = computed(() => {
         const q = String(search.value ?? '')
@@ -110,6 +105,9 @@
         initialPagination: {
             pageIndex: 0,
             pageSize: pageSize.value
+        },
+        tableOptions: {
+            autoResetPageIndex: false
         }
     });
 
@@ -135,7 +133,7 @@
     };
 
     watch(
-        () => previousInstancesInfoDialogVisible.value,
+        () => previousInstancesInfoDialog.value.visible,
         (value) => {
             if (value) {
                 nextTick(() => {
@@ -143,13 +141,13 @@
                     refreshPreviousInstancesInfoTable();
                 });
             }
-        }
+        },
+        { immediate: true }
     );
 
     function init() {
-        previousInstancesInfoDialogIndex.value = getNextDialogIndex();
         loading.value = true;
-        location.value = parseLocation(previousInstancesInfoDialogInstanceId.value);
+        location.value = parseLocation(previousInstancesInfoDialog.value.instanceId);
     }
 
     function refreshPreviousInstancesInfoTable() {
@@ -165,9 +163,5 @@
             rawRows.value = array;
             loading.value = false;
         });
-    }
-
-    function closeDialog() {
-        previousInstancesInfoDialogVisible.value = false;
     }
 </script>

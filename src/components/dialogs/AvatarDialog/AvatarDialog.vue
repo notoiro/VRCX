@@ -1,16 +1,16 @@
 <template>
-    <el-dialog
-        :z-index="avatarDialogIndex"
-        class="x-dialog x-avatar-dialog"
-        v-model="avatarDialog.visible"
-        :show-close="false"
-        top="10vh"
-        width="940px">
-        <div v-loading="avatarDialog.loading">
-            <div style="display: flex">
+    <div class="w-223">
+        <DialogHeader class="sr-only">
+            <DialogTitle>{{ avatarDialog.ref?.name || t('dialog.avatar.info.header') }}</DialogTitle>
+            <DialogDescription>
+                {{ avatarDialog.ref?.description || avatarDialog.ref?.name || t('dialog.avatar.info.header') }}
+            </DialogDescription>
+        </DialogHeader>
+        <div>
+            <div class="flex">
                 <img
                     :src="avatarDialog.ref.thumbnailImageUrl"
-                    class="x-link"
+                    class="cursor-pointer"
                     @click="showFullscreenImageDialog(avatarDialog.ref.imageUrl)"
                     style="flex: none; width: 160px; height: 120px; border-radius: 12px"
                     loading="lazy" />
@@ -18,14 +18,14 @@
                     <div style="flex: 1">
                         <div>
                             <span
-                                class="dialog-title"
+                                class="font-bold"
                                 style="margin-right: 5px; cursor: pointer"
                                 v-text="avatarDialog.ref.name"
                                 @click="copyToClipboard(avatarDialog.ref.name)"></span>
                         </div>
                         <div style="margin-top: 5px">
                             <span
-                                class="x-link x-grey"
+                                class="cursor-pointer x-grey"
                                 style="font-family: monospace"
                                 @click="showUserDialog(avatarDialog.ref.authorId)"
                                 v-text="avatarDialog.ref.authorName"></span>
@@ -45,7 +45,7 @@
                                     class="x-tag-platform-pc"
                                     variant="outline"
                                     style="margin-right: 5px; margin-top: 5px"
-                                    ><i class="ri-computer-line"></i>
+                                    ><Monitor class="h-4 w-4 x-tag-platform-pc" />
                                     <span
                                         v-if="avatarDialog.platformInfo.pc"
                                         :class="['x-grey', 'x-tag-platform-pc', 'x-tag-border-left']"
@@ -63,7 +63,7 @@
                                     class="x-tag-platform-quest"
                                     variant="outline"
                                     style="margin-right: 5px; margin-top: 5px"
-                                    ><i class="ri-android-line"></i>
+                                    ><Smartphone class="h-4 w-4 x-tag-platform-quest" />
                                     <span
                                         v-if="avatarDialog.platformInfo.android"
                                         :class="['x-grey', 'x-tag-platform-quest', 'x-tag-border-left']"
@@ -78,18 +78,18 @@
                             </TooltipWrapper>
                             <TooltipWrapper v-if="avatarDialog.isIos" side="top" content="iOS">
                                 <Badge
-                                    class="x-tag-platform-ios"
+                                    class="text-[#8e8e93] border-[#8e8e93]"
                                     variant="outline"
                                     style="margin-right: 5px; margin-top: 5px"
-                                    ><i class="ri-apple-line"></i>
+                                    ><Apple class="h-4 w-4 text-[#8e8e93]" />
                                     <span
                                         v-if="avatarDialog.platformInfo.ios"
-                                        :class="['x-grey', 'x-tag-platform-ios', 'x-tag-border-left']"
+                                        :class="['x-grey', 'x-tag-border-left', 'text-[#8e8e93]', 'border-[#8e8e93]']"
                                         >{{ avatarDialog.platformInfo.ios.performanceRating }}</span
                                     >
                                     <span
                                         v-if="avatarDialog.bundleSizes['ios']"
-                                        :class="['x-grey', 'x-tag-platform-ios', 'x-tag-border-left']"
+                                        :class="['x-grey', 'x-tag-border-left', 'text-[#8e8e93]', 'border-[#8e8e93]']"
                                         >{{ avatarDialog.bundleSizes['ios'].fileSize }}</span
                                     >
                                 </Badge>
@@ -97,7 +97,7 @@
                             <Badge
                                 v-if="avatarDialog.inCache"
                                 variant="outline"
-                                class="x-link"
+                                class="cursor-pointer"
                                 style="margin-right: 5px; margin-top: 5px"
                                 @click="openFolderGeneric(avatarDialog.cachePath)">
                                 <span v-text="avatarDialog.cacheSize"></span>
@@ -219,7 +219,7 @@
                                 variant="outline"
                                 :disabled="currentUser.currentAvatar === avatarDialog.id"
                                 @click="selectAvatarWithoutConfirmation(avatarDialog.id)">
-                                <CircleCheck
+                                <CheckCircle
                             /></Button>
                         </TooltipWrapper>
                         <DropdownMenu>
@@ -233,11 +233,11 @@
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuItem @click="avatarDialogCommand('Refresh')">
-                                    <Refresh class="size-4" />
+                                    <RefreshCw class="size-4" />
                                     {{ t('dialog.avatar.actions.refresh') }}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem @click="avatarDialogCommand('Share')">
-                                    <Share class="size-4" />
+                                    <Share2 class="size-4" />
                                     {{ t('dialog.avatar.actions.share') }}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -245,11 +245,11 @@
                                     v-if="avatarDialog.isBlocked"
                                     variant="destructive"
                                     @click="avatarDialogCommand('Unblock Avatar')">
-                                    <CircleCheck class="size-4" />
+                                    <CheckCircle class="size-4" />
                                     {{ t('dialog.avatar.actions.unblock') }}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem v-else @click="avatarDialogCommand('Block Avatar')">
-                                    <CircleClose class="size-4" />
+                                    <XCircle class="size-4" />
                                     {{ t('dialog.avatar.actions.block') }}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -271,23 +271,23 @@
                                         {{ t('dialog.avatar.actions.make_public') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem @click="avatarDialogCommand('Rename')">
-                                        <Edit class="size-4" />
+                                        <Pencil class="size-4" />
                                         {{ t('dialog.avatar.actions.rename') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem @click="avatarDialogCommand('Change Description')">
-                                        <Edit class="size-4" />
+                                        <Pencil class="size-4" />
                                         {{ t('dialog.avatar.actions.change_description') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem @click="avatarDialogCommand('Change Content Tags')">
-                                        <Edit class="size-4" />
+                                        <Pencil class="size-4" />
                                         {{ t('dialog.avatar.actions.change_content_tags') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem @click="avatarDialogCommand('Change Styles and Author Tags')">
-                                        <Edit class="size-4" />
+                                        <Pencil class="size-4" />
                                         {{ t('dialog.avatar.actions.change_styles_author_tags') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem @click="avatarDialogCommand('Change Image')">
-                                        <Picture class="size-4" />
+                                        <Image class="size-4" />
                                         {{ t('dialog.avatar.actions.change_image') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
@@ -301,22 +301,22 @@
                                         v-if="avatarDialog.hasImposter"
                                         variant="destructive"
                                         @click="avatarDialogCommand('Regenerate Imposter')">
-                                        <Refresh class="size-4" />
+                                        <RefreshCw class="size-4" />
                                         {{ t('dialog.avatar.actions.regenerate_impostor') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         v-if="avatarDialog.hasImposter"
                                         variant="destructive"
                                         @click="avatarDialogCommand('Delete Imposter')">
-                                        <Delete class="size-4" />
+                                        <Trash2 class="size-4" />
                                         {{ t('dialog.avatar.actions.delete_impostor') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem v-else @click="avatarDialogCommand('Create Imposter')">
                                         <User class="size-4" />
                                         {{ t('dialog.avatar.actions.create_impostor') }}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem variant="destructive" @click="avatarDialogCommand('Delete')">
-                                        <Delete class="size-4" />
+                                    <DropdownMenuItem variant="destructive" @click="avatarDialogCommand('Trash2')">
+                                        <Trash2 class="size-4" />
                                         {{ t('dialog.avatar.actions.delete') }}
                                     </DropdownMenuItem>
                                 </template>
@@ -325,8 +325,13 @@
                     </div>
                 </div>
             </div>
-            <el-tabs v-model="avatarDialogLastActiveTab" @tab-click="avatarDialogTabClick">
-                <el-tab-pane name="Info" :label="t('dialog.avatar.info.header')">
+
+            <TabsUnderline
+                v-model="avatarDialog.activeTab"
+                :items="avatarDialogTabs"
+                :unmount-on-hide="false"
+                @update:modelValue="avatarDialogTabClick">
+                <template #Info>
                     <div class="x-friend-list" style="max-height: unset">
                         <div
                             v-if="avatarDialog.galleryImages.length || avatarDialog.ref.authorId === currentUser.id"
@@ -416,8 +421,8 @@
                                                     size="icon-sm"
                                                     variant="outline"
                                                     @click.stop
-                                                    ><i class="ri-file-copy-line"></i
-                                                ></Button>
+                                                    ><Copy class="h-4 w-4" />
+                                                </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
                                                 <DropdownMenuItem @click="copyAvatarId(avatarDialog.id)">
@@ -461,11 +466,7 @@
                         </div>
                         <div class="x-friend-item" style="cursor: default">
                             <div class="detail">
-                                <span class="name"
-                                    >{{ t('dialog.avatar.info.time_spent')
-                                    }}<TooltipWrapper side="top" :content="t('dialog.world.info.accuracy_notice')">
-                                        <el-icon style="margin-left: 3px"><Warning /></el-icon> </TooltipWrapper
-                                ></span>
+                                <span class="name">{{ t('dialog.avatar.info.time_spent') }}</span>
 
                                 <span v-if="timeSpent === 0" class="extra">-</span>
                                 <span v-else class="extra">{{ timeToText(timeSpent) }}</span>
@@ -479,62 +480,74 @@
                             </div>
                         </div>
                     </div>
-                </el-tab-pane>
-                <el-tab-pane name="JSON" :label="t('dialog.avatar.json.header')" style="max-height: 50vh" lazy>
+                </template>
+                <template #JSON>
                     <Button
-                        class="rounded-full h-6 w-6 mr-2"
+                        class="rounded-full mr-2"
                         size="icon-sm"
                         variant="outline"
                         @click="refreshAvatarDialogTreeData()">
-                        <RefreshCcw />
+                        <RefreshCw />
                     </Button>
                     <Button
-                        class="rounded-full h-6 w-6"
+                        class="rounded-full"
                         size="icon-sm"
                         variant="outline"
                         @click="downloadAndSaveJson(avatarDialog.id, avatarDialog.ref)">
                         <Download />
                     </Button>
-                    <vue-json-pretty :data="treeData" :deep="2" :theme="isDarkMode ? 'dark' : 'light'" show-icon />
+                    <vue-json-pretty
+                        :key="treeData?.id"
+                        :data="treeData"
+                        :deep="2"
+                        :theme="isDarkMode ? 'dark' : 'light'"
+                        show-icon />
                     <br />
                     <vue-json-pretty
-                        v-if="avatarDialog.fileAnalysis.length > 0"
+                        v-if="Object.keys(avatarDialog.fileAnalysis).length > 0"
                         :data="avatarDialog.fileAnalysis"
                         :deep="2"
                         :theme="isDarkMode ? 'dark' : 'light'"
                         show-icon />
-                </el-tab-pane>
-            </el-tabs>
+                </template>
+            </TabsUnderline>
+            <template v-if="avatarDialog.visible">
+                <SetAvatarTagsDialog v-model:setAvatarTagsDialog="setAvatarTagsDialog" />
+                <SetAvatarStylesDialog v-model:setAvatarStylesDialog="setAvatarStylesDialog" />
+                <ChangeAvatarImageDialog
+                    v-model:changeAvatarImageDialogVisible="changeAvatarImageDialogVisible"
+                    v-model:previousImageUrl="previousImageUrl" />
+            </template>
         </div>
-        <template v-if="avatarDialog.visible">
-            <SetAvatarTagsDialog v-model:setAvatarTagsDialog="setAvatarTagsDialog" />
-            <SetAvatarStylesDialog v-model:setAvatarStylesDialog="setAvatarStylesDialog" />
-            <ChangeAvatarImageDialog
-                v-model:changeAvatarImageDialogVisible="changeAvatarImageDialogVisible"
-                v-model:previousImageUrl="previousImageUrl" />
-        </template>
-    </el-dialog>
+    </div>
 </template>
 
 <script setup>
     import {
-        CircleClose,
-        Delete,
+        Apple,
+        Check,
+        CheckCircle,
+        Copy,
         Download,
-        Edit,
-        Picture,
-        Refresh,
-        Share,
+        Ellipsis,
+        Image,
+        Monitor,
+        Pencil,
+        RefreshCw,
+        Share2,
+        Smartphone,
+        Star,
+        Trash2,
         Upload,
         User,
-        Warning
-    } from '@element-plus/icons-vue';
-    import { Check, CircleCheck, Ellipsis, RefreshCcw, Star, Trash2 } from 'lucide-vue-next';
+        XCircle
+    } from 'lucide-vue-next';
     import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
     import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
+    import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Button } from '@/components/ui/button';
-    import { ElMessageBox } from 'element-plus';
     import { InputGroupTextareaField } from '@/components/ui/input-group';
+    import { TabsUnderline } from '@/components/ui/tabs';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
@@ -545,9 +558,7 @@
         commaNumber,
         copyToClipboard,
         downloadAndSaveJson,
-        extractFileId,
         formatDateFilter,
-        moveArrayItem,
         openExternalLink,
         openFolderGeneric,
         replaceVrcPackageUrl,
@@ -569,11 +580,11 @@
         DropdownMenuSeparator,
         DropdownMenuTrigger
     } from '../../ui/dropdown-menu';
-    import { avatarModerationRequest, avatarRequest, favoriteRequest, miscRequest } from '../../../api';
-    import { formatJsonVars, getNextDialogIndex } from '../../../shared/utils/base/ui';
+    import { avatarModerationRequest, avatarRequest, favoriteRequest } from '../../../api';
     import { AppDebug } from '../../../service/appConfig.js';
     import { Badge } from '../../ui/badge';
     import { database } from '../../../service/database';
+    import { formatJsonVars } from '../../../shared/utils/base/ui';
     import { handleImageUploadInput } from '../../../shared/utils/imageUpload';
 
     const ChangeAvatarImageDialog = defineAsyncComponent(() => import('./ChangeAvatarImageDialog.vue'));
@@ -595,9 +606,11 @@
     const modalStore = useModalStore();
 
     const { t } = useI18n();
+    const avatarDialogTabs = computed(() => [
+        { value: 'Info', label: t('dialog.avatar.info.header') },
+        { value: 'JSON', label: t('dialog.avatar.json.header') }
+    ]);
 
-    const avatarDialogIndex = ref(2000);
-    const avatarDialogLastActiveTab = ref('Info');
     const changeAvatarImageDialogVisible = ref(false);
     const previousImageUrl = ref('');
 
@@ -661,9 +674,6 @@
         () => avatarDialog.value.loading,
         () => {
             if (avatarDialog.value.visible) {
-                nextTick(() => {
-                    avatarDialogIndex.value = getNextDialogIndex();
-                });
                 handleDialogOpen();
                 !avatarDialog.value.loading && loadLastActiveTab();
             }
@@ -671,21 +681,24 @@
     );
 
     function handleAvatarDialogTab(tabName) {
+        avatarDialog.value.lastActiveTab = tabName;
         if (tabName === 'JSON') {
             refreshAvatarDialogTreeData();
         }
     }
 
     function loadLastActiveTab() {
-        handleAvatarDialogTab(avatarDialogLastActiveTab.value);
+        handleAvatarDialogTab(avatarDialog.value.lastActiveTab);
     }
 
-    function avatarDialogTabClick(obj) {
-        if (obj.props.name === avatarDialogLastActiveTab.value) {
+    function avatarDialogTabClick(tabName) {
+        if (tabName === avatarDialog.value.lastActiveTab) {
+            if (tabName === 'JSON') {
+                refreshAvatarDialogTreeData();
+            }
             return;
         }
-        handleAvatarDialogTab(obj.props.name);
-        avatarDialogLastActiveTab.value = obj.props.name;
+        handleAvatarDialogTab(tabName);
     }
 
     function getImageUrlFromImageId(imageId) {
@@ -909,18 +922,17 @@
     }
 
     function promptChangeAvatarDescription(avatar) {
-        ElMessageBox.prompt(
-            t('prompt.change_avatar_description.description'),
-            t('prompt.change_avatar_description.header'),
-            {
-                distinguishCancelAndClose: true,
-                confirmButtonText: t('prompt.change_avatar_description.ok'),
-                cancelButtonText: t('prompt.change_avatar_description.cancel'),
+        modalStore
+            .prompt({
+                title: t('prompt.change_avatar_description.header'),
+                description: t('prompt.change_avatar_description.description'),
+                confirmText: t('prompt.change_avatar_description.ok'),
+                cancelText: t('prompt.change_avatar_description.cancel'),
                 inputValue: avatar.ref.description,
-                inputErrorMessage: t('prompt.change_avatar_description.input_error')
-            }
-        )
-            .then(({ value }) => {
+                errorMessage: t('prompt.change_avatar_description.input_error')
+            })
+            .then(({ ok, value }) => {
+                if (!ok) return;
                 if (value && value !== avatar.ref.description) {
                     avatarRequest
                         .saveAvatar({
@@ -938,14 +950,17 @@
     }
 
     function promptRenameAvatar(avatar) {
-        ElMessageBox.prompt(t('prompt.rename_avatar.description'), t('prompt.rename_avatar.header'), {
-            distinguishCancelAndClose: true,
-            confirmButtonText: t('prompt.rename_avatar.ok'),
-            cancelButtonText: t('prompt.rename_avatar.cancel'),
-            inputValue: avatar.ref.name,
-            inputErrorMessage: t('prompt.rename_avatar.input_error')
-        })
-            .then(({ value }) => {
+        modalStore
+            .prompt({
+                title: t('prompt.rename_avatar.header'),
+                description: t('prompt.rename_avatar.description'),
+                confirmText: t('prompt.rename_avatar.ok'),
+                cancelText: t('prompt.rename_avatar.cancel'),
+                inputValue: avatar.ref.name,
+                errorMessage: t('prompt.rename_avatar.input_error')
+            })
+            .then(({ ok, value }) => {
+                if (!ok) return;
                 if (value && value !== avatar.ref.name) {
                     avatarRequest
                         .saveAvatar({
@@ -1108,45 +1123,5 @@
             console.error('Failed to read file', error);
             resetLoading();
         }
-    }
-
-    function reorderAvatarGalleryImage(imageUrl, direction) {
-        const fileId = extractFileId(imageUrl);
-        let fileIds = [];
-        avatarDialog.value.ref.gallery.forEach((item) => {
-            fileIds.push(extractFileId(item.id));
-        });
-        const index = fileIds.indexOf(fileId);
-        if (index === -1) {
-            toast.error(t('message.avatar_gallery.not_found'));
-            return;
-        }
-        if (direction === -1 && index === 0) {
-            toast.warning(t('message.avatar_gallery.already_first'));
-            return;
-        }
-        if (direction === 1 && index === fileIds.length - 1) {
-            toast.warning(t('message.avatar_gallery.already_last'));
-            return;
-        }
-        if (direction === -1) {
-            moveArrayItem(fileIds, index, index - 1);
-        } else {
-            moveArrayItem(fileIds, index, index + 1);
-        }
-        avatarRequest.setAvatarGalleryOrder(fileIds).then(async (args) => {
-            toast.success(t('message.avatar_gallery.reordered'));
-            avatarDialog.value.galleryImages = await getAvatarGallery(avatarDialog.value.id);
-            return args;
-        });
-    }
-
-    function deleteAvatarGalleryImage(imageUrl) {
-        const fileId = extractFileId(imageUrl);
-        miscRequest.deleteFile(fileId).then((args) => {
-            toast.success(t('message.avatar_gallery.deleted'));
-            getAvatarGallery(avatarDialog.value.id);
-            return args;
-        });
     }
 </script>

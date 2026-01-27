@@ -1,6 +1,7 @@
 import { nextTick, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import { toast } from 'vue-sonner';
+import { useI18n } from 'vue-i18n';
 
 import {
     groupRequest,
@@ -15,11 +16,14 @@ import {
 } from '../shared/utils';
 import { database } from '../service/database.js';
 import { groupDialogFilterOptions } from '../shared/constants/';
+import { useAvatarStore } from './avatar';
 import { useGameStore } from './game';
 import { useInstanceStore } from './instance';
 import { useModalStore } from './modal';
 import { useNotificationStore } from './notification';
+import { useUiStore } from './ui';
 import { useUserStore } from './user';
+import { useWorldStore } from './world';
 import { watchState } from '../service/watchState';
 
 import configRepository from '../service/config';
@@ -30,16 +34,21 @@ export const useGroupStore = defineStore('Group', () => {
     const instanceStore = useInstanceStore();
     const gameStore = useGameStore();
     const userStore = useUserStore();
+    const worldStore = useWorldStore();
+    const avatarStore = useAvatarStore();
     const notificationStore = useNotificationStore();
     const modalStore = useModalStore();
+    const uiStore = useUiStore();
+    const { t } = useI18n();
 
     let cachedGroups = new Map();
 
     const groupDialog = ref({
         visible: false,
         loading: false,
+        activeTab: 'Info',
+        lastActiveTab: 'Info',
         isGetGroupDialogGroupLoading: false,
-        treeData: {},
         id: '',
         inGroup: false,
         ownerDisplayName: '',
@@ -122,17 +131,21 @@ export const useGroupStore = defineStore('Group', () => {
         { flush: 'sync' }
     );
 
-    function showGroupDialog(groupId) {
+    function showGroupDialog(groupId, options = {}) {
         if (!groupId) {
             return;
         }
+        uiStore.openDialog({
+            type: 'group',
+            id: groupId,
+            skipBreadcrumb: options.skipBreadcrumb
+        });
         const D = groupDialog.value;
         D.visible = true;
         D.loading = true;
         D.id = groupId;
         D.inGroup = false;
         D.ownerDisplayName = '';
-        D.treeData = {};
         D.announcement = {};
         D.posts = [];
         D.postsFiltered = [];
@@ -151,16 +164,21 @@ export const useGroupStore = defineStore('Group', () => {
             })
             .catch((err) => {
                 D.loading = false;
-                D.visible = false;
-                toast.error('Failed to load group');
+                uiStore.closeMainDialog();
+                toast.error(t('message.group.load_failed'));
                 throw err;
             })
             .then((args) => {
                 if (groupId === args.ref.id) {
-                    D.loading = false;
                     D.ref = args.ref;
+                    uiStore.setDialogCrumbLabel(
+                        'group',
+                        D.id,
+                        D.ref?.name || D.id
+                    );
                     D.inGroup = args.ref.membershipStatus === 'member';
                     D.ownerDisplayName = args.ref.ownerId;
+                    D.visible = true;
                     userRequest
                         .getCachedUser({
                             userId: args.ref.ownerId
@@ -420,6 +438,7 @@ export const useGroupStore = defineStore('Group', () => {
             .then((args) => {
                 const ref = applyGroup(args.json);
                 if (D.id === ref.id) {
+                    D.loading = false;
                     D.ref = ref;
                     D.inGroup = ref.membershipStatus === 'member';
                     for (const role of ref.roles) {

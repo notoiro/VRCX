@@ -143,12 +143,18 @@ async function checkVRChatCache(ref) {
         return { Item1: -1, Item2: false, Item3: '' };
     }
 
-    return AssetBundleManager.CheckVRChatCache(
-        id,
-        version,
-        variant,
-        variantVersion
-    );
+    try {
+        return AssetBundleManager.CheckVRChatCache(
+            id,
+            version,
+            variant,
+            variantVersion
+        );
+    } catch (err) {
+        console.error('Failed reading VRChat cache size:', err);
+        toast.error(`Failed reading VRChat cache size: ${err}`);
+        return { Item1: -1, Item2: false, Item3: '' };
+    }
 }
 
 /**
@@ -403,13 +409,15 @@ function openExternalLink(link) {
             confirmText: 'Open',
             cancelText: 'Copy'
         })
-        // TODO: beforeClose alert dialog
-        .then(({ ok }) => {
-            if (!ok) {
+        .then(({ ok, reason }) => {
+            if (reason === 'cancel') {
                 copyToClipboard(link, 'Link copied to clipboard!');
                 return;
             }
-            AppApi.OpenLink(link);
+            if (ok) {
+                AppApi.OpenLink(link);
+                return;
+            }
         });
 }
 
@@ -426,8 +434,8 @@ async function getBundleDateSize(ref) {
     const instanceStore = useInstanceStore();
     const { currentInstanceWorld, currentInstanceLocation } =
         storeToRefs(instanceStore);
-    const bundleSizes = [];
-    const bundleJson = [];
+    const bundleSizes = {};
+    const bundleJson = {};
     for (let i = ref.unityPackages.length - 1; i > -1; i--) {
         const unityPackage = ref.unityPackages[i];
         if (!unityPackage) {

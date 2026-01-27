@@ -1,22 +1,28 @@
 import { computed, ref, watch } from 'vue';
-import { ElMessageBox } from 'element-plus';
 import { defineStore } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import {
     HueToHex,
+    applyAppFontFamily,
     changeAppThemeStyle,
     changeHtmlLangAttribute,
+    getThemeMode,
     updateTrustColorClasses
 } from '../../shared/utils/base/ui';
+import {
+    APP_FONT_DEFAULT_KEY,
+    APP_FONT_FAMILIES,
+    THEME_CONFIG
+} from '../../shared/constants';
 import { database } from '../../service/database';
 import { getNameColour } from '../../shared/utils';
 import { languageCodes } from '../../localization';
 import { loadLocalizedStrings } from '../../plugin';
-import { useElementTheme } from '../../composables/useElementTheme';
 import { useFeedStore } from '../feed';
 import { useGameLogStore } from '../gameLog';
+import { useModalStore } from '../modal';
 import { useUiStore } from '../ui';
 import { useUserStore } from '../user';
 import { useVrStore } from '../vr';
@@ -36,16 +42,18 @@ export const useAppearanceSettingsStore = defineStore(
         const userStore = useUserStore();
         const router = useRouter();
         const uiStore = useUiStore();
+        const modalStore = useModalStore();
 
         const { t, locale } = useI18n();
 
         const MAX_TABLE_PAGE_SIZE = 1000;
         const DEFAULT_TABLE_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
-        const { initPrimaryColor } = useElementTheme();
 
         const appLanguage = ref('en');
         const themeMode = ref('');
         const isDarkMode = ref(false);
+        const lastDarkTheme = ref('dark');
+        const appFontFamily = ref('inter');
         const displayVRCPlusIconsAsAvatar = ref(false);
         const hideNicknames = ref(false);
         const showInstanceIdInLocation = ref(false);
@@ -73,7 +81,7 @@ export const useAppearanceSettingsStore = defineStore(
         const hideUserMemos = ref(false);
         const hideUnfriends = ref(false);
         const randomUserColours = ref(false);
-        const compactTableMode = ref(false);
+        const tableDensity = ref('standard');
         const TRUST_COLOR_DEFAULTS = Object.freeze({
             untrusted: '#CCCCCC',
             basic: '#1778FF',
@@ -96,15 +104,30 @@ export const useAppearanceSettingsStore = defineStore(
             );
         });
 
+        const isDataTableStriped = ref(false);
+        const showPointerOnHover = ref(false);
+
         const clampInt = (value, min, max) => {
             const n = parseInt(value, 10);
             return Math.min(max, Math.max(min, n));
         };
 
+        const resolveLastDarkTheme = (value, fallback = 'dark') => {
+            const normalized = String(value || '').trim();
+            return THEME_CONFIG[normalized]?.isDark === true
+                ? normalized
+                : fallback;
+        };
+
         async function initAppearanceSettings() {
+            const { initThemeMode, isDarkMode: initDarkMode } =
+                await getThemeMode(configRepository);
+            const fallbackDarkTheme =
+                THEME_CONFIG[initThemeMode]?.isDark === true
+                    ? initThemeMode
+                    : 'dark';
             const [
                 appLanguageConfig,
-                themeModeConfig,
                 displayVRCPlusIconsAsAvatarConfig,
                 hideNicknamesConfig,
                 showInstanceIdInLocationConfig,
@@ -125,13 +148,17 @@ export const useAppearanceSettingsStore = defineStore(
                 hideUserMemosConfig,
                 hideUnfriendsConfig,
                 randomUserColoursConfig,
+                tableDensityConfig,
                 compactTableModeConfig,
                 trustColorConfig,
                 notificationIconDotConfig,
-                navIsCollapsedConfig
+                navIsCollapsedConfig,
+                dataTableStripedConfig,
+                showPointerOnHoverConfig,
+                appFontFamilyConfig,
+                lastDarkThemeConfig
             ] = await Promise.all([
                 configRepository.getString('VRCX_appLanguage'),
-                configRepository.getString('VRCX_ThemeMode', 'system'),
                 configRepository.getBool('displayVRCPlusIconsAsAvatar', true),
                 configRepository.getBool('VRCX_hideNicknames', false),
                 configRepository.getBool(
@@ -177,13 +204,24 @@ export const useAppearanceSettingsStore = defineStore(
                 configRepository.getBool('VRCX_hideUserMemos', false),
                 configRepository.getBool('VRCX_hideUnfriends', false),
                 configRepository.getBool('VRCX_randomUserColours', false),
+                configRepository.getString('VRCX_tableDensity'),
                 configRepository.getBool('VRCX_compactTableMode', false),
                 configRepository.getString(
                     'VRCX_trustColor',
                     JSON.stringify(TRUST_COLOR_DEFAULTS)
                 ),
                 configRepository.getBool('VRCX_notificationIconDot', true),
-                configRepository.getBool('VRCX_navIsCollapsed', true)
+                configRepository.getBool('VRCX_navIsCollapsed', false),
+                configRepository.getBool('VRCX_dataTableStriped', false),
+                configRepository.getBool('VRCX_showPointerOnHover', false),
+                configRepository.getString(
+                    'VRCX_fontFamily',
+                    APP_FONT_DEFAULT_KEY
+                ),
+                configRepository.getString(
+                    'VRCX_lastDarkTheme',
+                    fallbackDarkTheme
+                )
             ]);
 
             if (!appLanguageConfig) {
@@ -201,9 +239,14 @@ export const useAppearanceSettingsStore = defineStore(
                 await changeAppLanguage(appLanguageConfig);
             }
 
-            themeMode.value = themeModeConfig;
-            setThemeMode(themeModeConfig);
-            await initPrimaryColor();
+            themeMode.value = initThemeMode;
+            isDarkMode.value = initDarkMode;
+            lastDarkTheme.value = resolveLastDarkTheme(
+                lastDarkThemeConfig,
+                fallbackDarkTheme
+            );
+            appFontFamily.value = normalizeAppFontFamily(appFontFamilyConfig);
+            applyAppFontFamily(appFontFamily.value);
 
             displayVRCPlusIconsAsAvatar.value =
                 displayVRCPlusIconsAsAvatarConfig;
@@ -251,9 +294,23 @@ export const useAppearanceSettingsStore = defineStore(
             hideUnfriends.value = hideUnfriendsConfig;
             randomUserColours.value = randomUserColoursConfig;
             notificationIconDot.value = notificationIconDotConfig;
-            compactTableMode.value = compactTableModeConfig;
-            applyCompactTableMode(compactTableMode.value);
+            const resolvedTableDensity = normalizeTableDensity(
+                tableDensityConfig ||
+                    (compactTableModeConfig ? 'compact' : 'standard')
+            );
+            tableDensity.value = resolvedTableDensity;
+            applyTableDensity(tableDensity.value);
+            if (!tableDensityConfig) {
+                configRepository.setString(
+                    'VRCX_tableDensity',
+                    tableDensity.value
+                );
+            }
             isNavCollapsed.value = navIsCollapsedConfig;
+            isDataTableStriped.value = dataTableStripedConfig;
+            showPointerOnHover.value = showPointerOnHoverConfig;
+
+            applyPointerHoverClass();
 
             await configRepository.remove('VRCX_navWidth');
 
@@ -439,10 +496,35 @@ export const useAppearanceSettingsStore = defineStore(
         function setThemeMode(mode) {
             themeMode.value = mode;
             configRepository.setString('VRCX_ThemeMode', mode);
+            if (THEME_CONFIG[mode]?.isDark === true) {
+                const normalized = resolveLastDarkTheme(mode);
+                lastDarkTheme.value = normalized;
+                configRepository.setString('VRCX_lastDarkTheme', normalized);
+            }
             const { isDark } = changeAppThemeStyle(mode);
             isDarkMode.value = isDark;
             vrStore.updateVRConfigVars();
             updateTrustColor(undefined, undefined);
+        }
+
+        function toggleThemeMode() {
+            const nextMode = isDarkMode.value
+                ? 'light'
+                : resolveLastDarkTheme(lastDarkTheme.value);
+            setThemeMode(nextMode);
+        }
+
+        function normalizeAppFontFamily(value) {
+            return APP_FONT_FAMILIES.includes(value)
+                ? value
+                : APP_FONT_DEFAULT_KEY;
+        }
+
+        function setAppFontFamily(value) {
+            const normalized = normalizeAppFontFamily(value);
+            appFontFamily.value = normalized;
+            configRepository.setString('VRCX_fontFamily', normalized);
+            applyAppFontFamily(normalized);
         }
 
         function setDisplayVRCPlusIconsAsAvatar() {
@@ -650,14 +732,51 @@ export const useAppearanceSettingsStore = defineStore(
                 randomUserColours.value
             );
         }
-        function setCompactTableMode() {
-            compactTableMode.value = !compactTableMode.value;
-            applyCompactTableMode(compactTableMode.value);
+        function normalizeTableDensity(value) {
+            if (
+                value === 'compact' ||
+                value === 'comfortable' ||
+                value === 'standard'
+            ) {
+                return value;
+            }
+            return 'standard';
+        }
+
+        function setTableDensity(density) {
+            const normalized = normalizeTableDensity(density);
+            tableDensity.value = normalized;
+            applyTableDensity(tableDensity.value);
+            configRepository.setString('VRCX_tableDensity', tableDensity.value);
+        }
+
+        function toggleStripedDataTable() {
+            isDataTableStriped.value = !isDataTableStriped.value;
             configRepository.setBool(
-                'VRCX_compactTableMode',
-                compactTableMode.value
+                'VRCX_dataTableStriped',
+                isDataTableStriped.value
             );
         }
+
+        // FIXME: this is nasty, there should be a better way of doing this
+        function applyPointerHoverClass() {
+            const classList = document.documentElement.classList;
+            classList.remove('force-pointer-on-hover');
+
+            if (showPointerOnHover.value) {
+                classList.add('force-pointer-on-hover');
+            }
+        }
+
+        function togglePointerOnHover() {
+            showPointerOnHover.value = !showPointerOnHover.value;
+            configRepository.setBool(
+                'VRCX_showPointerOnHover',
+                showPointerOnHover.value
+            );
+            applyPointerHoverClass();
+        }
+
         /**
          * @param {object} color
          */
@@ -746,19 +865,18 @@ export const useAppearanceSettingsStore = defineStore(
         }
 
         function promptMaxTableSizeDialog() {
-            ElMessageBox.prompt(
-                t('prompt.change_table_size.description'),
-                t('prompt.change_table_size.header'),
-                {
-                    distinguishCancelAndClose: true,
-                    confirmButtonText: t('prompt.change_table_size.save'),
-                    cancelButtonText: t('prompt.change_table_size.cancel'),
+            modalStore
+                .prompt({
+                    title: t('prompt.change_table_size.header'),
+                    description: t('prompt.change_table_size.description'),
+                    confirmText: t('prompt.change_table_size.save'),
+                    cancelText: t('prompt.change_table_size.cancel'),
                     inputValue: vrcxStore.maxTableSize.toString(),
-                    inputPattern: /\d+$/,
-                    inputErrorMessage: t('prompt.change_table_size.input_error')
-                }
-            )
-                .then(async ({ value }) => {
+                    pattern: /\d+$/,
+                    errorMessage: t('prompt.change_table_size.input_error')
+                })
+                .then(async ({ ok, value }) => {
+                    if (!ok) return;
                     if (value) {
                         let processedValue = Number(value);
                         if (processedValue > 10000) {
@@ -786,12 +904,14 @@ export const useAppearanceSettingsStore = defineStore(
             await userColourInit();
         }
 
-        function applyCompactTableMode(isCompact) {
-            const className = 'is-compact-table';
-            if (isCompact) {
-                document.documentElement.classList.add(className);
-            } else {
-                document.documentElement.classList.remove(className);
+        function applyTableDensity(density) {
+            const classList = document.documentElement.classList;
+            classList.remove('is-compact-table', 'is-comfortable-table');
+            if (density === 'compact') {
+                classList.add('is-compact-table');
+            }
+            if (density === 'comfortable') {
+                classList.add('is-comfortable-table');
             }
         }
 
@@ -799,6 +919,7 @@ export const useAppearanceSettingsStore = defineStore(
             appLanguage,
             themeMode,
             isDarkMode,
+            appFontFamily,
             displayVRCPlusIconsAsAvatar,
             hideNicknames,
             showInstanceIdInLocation,
@@ -822,12 +943,14 @@ export const useAppearanceSettingsStore = defineStore(
             hideUserMemos,
             hideUnfriends,
             randomUserColours,
-            compactTableMode,
+            tableDensity,
             trustColor,
             currentCulture,
             isSideBarTabShow,
             notificationIconDot,
             isNavCollapsed,
+            isDataTableStriped,
+            showPointerOnHover,
 
             setAppLanguage,
             setDisplayVRCPlusIconsAsAvatar,
@@ -853,7 +976,9 @@ export const useAppearanceSettingsStore = defineStore(
             setHideUserMemos,
             setHideUnfriends,
             setRandomUserColours,
-            setCompactTableMode,
+            toggleStripedDataTable,
+            togglePointerOnHover,
+            setTableDensity,
             setTrustColor,
             tryInitUserColours,
             updateTrustColor,
@@ -862,10 +987,12 @@ export const useAppearanceSettingsStore = defineStore(
             changeAppLanguage,
             promptMaxTableSizeDialog,
             setNotificationIconDot,
-            applyCompactTableMode,
+            applyTableDensity,
             setNavCollapsed,
             toggleNavCollapsed,
-            setThemeMode
+            setAppFontFamily,
+            setThemeMode,
+            toggleThemeMode
         };
     }
 );

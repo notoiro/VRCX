@@ -5,9 +5,21 @@ import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
-    TooltipTrigger
+    TooltipTrigger,
+    TooltipWrapper
 } from '../../components/ui/tooltip';
-import { ArrowUpDown } from 'lucide-vue-next';
+import {
+    ArrowUpDown,
+    Ban,
+    BellOff,
+    Check,
+    Link,
+    MessageCircle,
+    Reply,
+    Tag,
+    Trash2,
+    X
+} from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 
 import { checkCanInvite, formatDateFilter } from '../../shared/utils';
@@ -58,25 +70,23 @@ export const createColumns = ({
         );
     };
 
-    const getResponseIconClass = (response, notificationType) => {
+    const getResponseIcon = (response, notificationType) => {
         if (response?.type === 'link') {
-            return 'ri-link-m';
+            return Link;
         }
         switch (response?.icon) {
             case 'check':
-                return 'ri-check-line';
+                return Check;
             case 'cancel':
-                return 'ri-close-line';
+                return X;
             case 'ban':
-                return 'ri-forbid-2-line';
+                return Ban;
             case 'bell-slash':
-                return 'ri-notification-off-line';
+                return BellOff;
             case 'reply':
-                return notificationType === 'boop'
-                    ? 'ri-chat-1-line'
-                    : 'ri-reply-line';
+                return notificationType === 'boop' ? MessageCircle : Reply;
             default:
-                return 'ri-price-tag-3-line';
+                return Tag;
         }
     };
 
@@ -158,7 +168,7 @@ export const createColumns = ({
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <span
-                                            class="x-link"
+                                            class="cursor-pointer"
                                             onClick={() =>
                                                 showWorldDialog(
                                                     original.location
@@ -174,7 +184,7 @@ export const createColumns = ({
                                                 location={original.location}
                                                 hint={original.worldName}
                                                 grouphint={original.groupName}
-                                                link={false}
+                                                link={true}
                                             />
                                         ) : null}
                                     </TooltipContent>
@@ -191,7 +201,7 @@ export const createColumns = ({
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <span
-                                            class="x-link"
+                                            class="cursor-pointer"
                                             onClick={() =>
                                                 openNotificationLink(
                                                     original.link
@@ -233,7 +243,7 @@ export const createColumns = ({
                     return (
                         <span class="table-user-text block w-full min-w-0 truncate">
                             <span
-                                class="x-link block w-full min-w-0 truncate"
+                                class="cursor-pointer block w-full min-w-0 truncate"
                                 onClick={() =>
                                     showUserDialog(original.senderUserId)
                                 }
@@ -248,7 +258,7 @@ export const createColumns = ({
                     return (
                         <span class="table-user-text block w-full min-w-0 truncate">
                             <span
-                                class="x-link block w-full min-w-0 truncate"
+                                class="cursor-pointer block w-full min-w-0 truncate"
                                 onClick={() =>
                                     openNotificationLink(original.link)
                                 }
@@ -297,7 +307,7 @@ export const createColumns = ({
                     return (
                         <span class="table-user-text block w-full min-w-0 truncate">
                             <span
-                                class="x-link block w-full min-w-0 truncate"
+                                class="cursor-pointer block w-full min-w-0 truncate"
                                 onClick={() =>
                                     showGroupDialog(original.senderUserId)
                                 }
@@ -323,7 +333,7 @@ export const createColumns = ({
                     return (
                         <span class="table-user-text block w-full min-w-0 truncate">
                             <span
-                                class="x-link block w-full min-w-0 truncate"
+                                class="cursor-pointer block w-full min-w-0 truncate"
                                 onClick={() =>
                                     openNotificationLink(original.link)
                                 }
@@ -338,7 +348,7 @@ export const createColumns = ({
                     return (
                         <span class="table-user-text block w-full min-w-0 truncate">
                             <span
-                                class="x-link block w-full min-w-0 truncate"
+                                class="cursor-pointer block w-full min-w-0 truncate"
                                 onClick={() =>
                                     openNotificationLink(original.link)
                                 }
@@ -380,7 +390,6 @@ export const createColumns = ({
         },
         {
             accessorKey: 'photo',
-            enableResizing: false,
             size: 80,
             header: () => t('table.notification.photo'),
             cell: ({ row }) => {
@@ -392,7 +401,7 @@ export const createColumns = ({
                     }
                     return (
                         <Emoji
-                            class="x-link h-7.5 w-7.5 rounded object-cover"
+                            class="cursor-pointer h-7.5 w-7.5 rounded object-cover"
                             onClick={() => showFullscreenImageDialog(imageUrl)}
                             imageUrl={imageUrl}
                             size={30}
@@ -403,7 +412,7 @@ export const createColumns = ({
                 if (original.details?.imageUrl) {
                     return (
                         <img
-                            class="x-link h-7.5 w-7.5 rounded object-cover"
+                            class="cursor-pointer h-7.5 w-7.5 rounded object-cover"
                             src={getSmallThumbnailUrl(
                                 original.details.imageUrl
                             )}
@@ -420,7 +429,7 @@ export const createColumns = ({
                 if (original.imageUrl) {
                     return (
                         <img
-                            class="x-link h-7.5 w-7.5 rounded object-cover"
+                            class="cursor-pointer h-7.5 w-7.5 rounded object-cover"
                             src={getSmallThumbnailUrl(original.imageUrl)}
                             onClick={() =>
                                 showFullscreenImageDialog(original.imageUrl)
@@ -459,27 +468,47 @@ export const createColumns = ({
                         {original.message &&
                         original.message !==
                             `This is a generated invite to ${original.details?.worldName}` ? (
-                            <span class="block w-full min-w-0 truncate">
-                                {original.message}
-                            </span>
+                            <TooltipWrapper
+                                content={original.message}
+                                delayDuration={500}
+                            >
+                                <span class="block w-full min-w-0 truncate">
+                                    {original.message}
+                                </span>
+                            </TooltipWrapper>
                         ) : null}
                         {!original.message &&
                         original.details?.inviteMessage ? (
-                            <span class="block w-full min-w-0 truncate">
-                                {original.details.inviteMessage}
-                            </span>
+                            <TooltipWrapper
+                                content={original.details.inviteMessage}
+                                delayDuration={500}
+                            >
+                                <span class="block w-full min-w-0 truncate">
+                                    {original.details.inviteMessage}
+                                </span>
+                            </TooltipWrapper>
                         ) : null}
                         {!original.message &&
                         original.details?.requestMessage ? (
-                            <span class="block w-full min-w-0 truncate">
-                                {original.details.requestMessage}
-                            </span>
+                            <TooltipWrapper
+                                content={original.details.requestMessage}
+                                delayDuration={500}
+                            >
+                                <span class="block w-full min-w-0 truncate">
+                                    {original.details.requestMessage}
+                                </span>
+                            </TooltipWrapper>
                         ) : null}
                         {!original.message &&
                         original.details?.responseMessage ? (
-                            <span class="block w-full min-w-0 truncate">
-                                {original.details.responseMessage}
-                            </span>
+                            <TooltipWrapper
+                                content={original.details.responseMessage}
+                                delayDuration={500}
+                            >
+                                <span class="block w-full min-w-0 truncate">
+                                    {original.details.responseMessage}
+                                </span>
+                            </TooltipWrapper>
                         ) : null}
                     </div>
                 );
@@ -493,7 +522,6 @@ export const createColumns = ({
             size: 120,
             minSize: 120,
             maxSize: 120,
-            enableResizing: false,
             header: () => t('table.notification.action'),
             enableSorting: false,
             cell: ({ row }) => {
@@ -532,11 +560,15 @@ export const createColumns = ({
                                                         )
                                                     }
                                                 >
-                                                    <i class="ri-check-line" />
+                                                    <Check class="h-4 w-4" />
                                                 </button>
                                             </TooltipTrigger>
                                             <TooltipContent side="top">
-                                                <span>Accept</span>
+                                                <span>
+                                                    {t(
+                                                        'view.notification.actions.accept'
+                                                    )}
+                                                </span>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
@@ -555,12 +587,14 @@ export const createColumns = ({
                                                         )
                                                     }
                                                 >
-                                                    <i class="ri-chat-1-line" />
+                                                    <MessageCircle class="h-4 w-4" />
                                                 </button>
                                             </TooltipTrigger>
                                             <TooltipContent side="top">
                                                 <span>
-                                                    Decline with message
+                                                    {t(
+                                                        'view.notification.actions.decline_with_message'
+                                                    )}
                                                 </span>
                                             </TooltipContent>
                                         </Tooltip>
@@ -582,11 +616,15 @@ export const createColumns = ({
                                                                 )
                                                             }
                                                         >
-                                                            <i class="ri-check-line" />
+                                                            <Check class="h-4 w-4" />
                                                         </button>
                                                     </TooltipTrigger>
                                                     <TooltipContent side="top">
-                                                        <span>Invite</span>
+                                                        <span>
+                                                            {t(
+                                                                'view.notification.actions.invite'
+                                                            )}
+                                                        </span>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
@@ -603,12 +641,14 @@ export const createColumns = ({
                                                             )
                                                         }
                                                     >
-                                                        <i class="ri-chat-1-line" />
+                                                        <MessageCircle class="h-4 w-4" />
                                                     </button>
                                                 </TooltipTrigger>
                                                 <TooltipContent side="top">
                                                     <span>
-                                                        Decline with message
+                                                        {t(
+                                                            'view.notification.actions.decline_with_message'
+                                                        )}
                                                     </span>
                                                 </TooltipContent>
                                             </Tooltip>
@@ -641,11 +681,10 @@ export const createColumns = ({
                                               );
                                           };
 
-                                          const iconClass =
-                                              getResponseIconClass(
-                                                  response,
-                                                  original.type
-                                              );
+                                          const ResponseIcon = getResponseIcon(
+                                              response,
+                                              original.type
+                                          );
 
                                           return (
                                               <TooltipProvider
@@ -658,11 +697,7 @@ export const createColumns = ({
                                                               class="inline-flex h-6 ml-1 items-center justify-center text-muted-foreground hover:text-foreground"
                                                               onClick={onClick}
                                                           >
-                                                              <i
-                                                                  class={
-                                                                      iconClass
-                                                                  }
-                                                              />
+                                                              <ResponseIcon class="h-4 w-4" />
                                                           </button>
                                                       </TooltipTrigger>
                                                       <TooltipContent side="top">
@@ -693,17 +728,21 @@ export const createColumns = ({
                                                               )
                                                     }
                                                 >
-                                                    <i
+                                                    <X
                                                         class={
                                                             shiftHeld.value
-                                                                ? 'ri-close-line text-red-600'
-                                                                : 'ri-close-line'
+                                                                ? 'h-4 w-4 text-red-600'
+                                                                : 'h-4 w-4'
                                                         }
                                                     />
                                                 </button>
                                             </TooltipTrigger>
                                             <TooltipContent side="top">
-                                                <span>Decline</span>
+                                                <span>
+                                                    {t(
+                                                        'view.notification.actions.decline'
+                                                    )}
+                                                </span>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
@@ -726,55 +765,58 @@ export const createColumns = ({
                                                               )
                                                     }
                                                 >
-                                                    <i
-                                                        class={
-                                                            shiftHeld.value
-                                                                ? 'ri-close-line text-red-600'
-                                                                : 'ri-delete-bin-line'
-                                                        }
-                                                    />
+                                                    {shiftHeld.value ? (
+                                                        <X class="h-4 w-4 text-red-600" />
+                                                    ) : (
+                                                        <Trash2 class="h-4 w-4" />
+                                                    )}
                                                 </button>
                                             </TooltipTrigger>
                                             <TooltipContent side="top">
-                                                <span>Delete log</span>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                ) : null}
-
-                                {showDeleteLog ? (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    class="inline-flex h-6 ml-1 items-center justify-center text-muted-foreground hover:text-foreground"
-                                                    onClick={() =>
-                                                        shiftHeld.value
-                                                            ? deleteNotificationLog(
-                                                                  original
-                                                              )
-                                                            : deleteNotificationLogPrompt(
-                                                                  original
-                                                              )
-                                                    }
-                                                >
-                                                    <i
-                                                        class={
-                                                            shiftHeld.value
-                                                                ? 'ri-close-line text-red-600'
-                                                                : 'ri-delete-bin-line'
-                                                        }
-                                                    />
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">
-                                                <span>Delete log</span>
+                                                <span>
+                                                    {t(
+                                                        'view.notification.actions.delete_log'
+                                                    )}
+                                                </span>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 ) : null}
                             </span>
+                        ) : null}
+                        {showDeleteLog ? (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            class="inline-flex h-6 ml-1 items-center justify-center text-muted-foreground hover:text-foreground"
+                                            onClick={() =>
+                                                shiftHeld.value
+                                                    ? deleteNotificationLog(
+                                                          original
+                                                      )
+                                                    : deleteNotificationLogPrompt(
+                                                          original
+                                                      )
+                                            }
+                                        >
+                                            {shiftHeld.value ? (
+                                                <X class="h-4 w-4 text-red-600" />
+                                            ) : (
+                                                <Trash2 class="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        <span>
+                                            {t(
+                                                'view.notification.actions.delete_log'
+                                            )}
+                                        </span>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         ) : null}
                     </div>
                 );

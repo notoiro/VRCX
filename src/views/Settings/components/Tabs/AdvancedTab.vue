@@ -5,35 +5,16 @@
             <div class="options-container-item" style="margin-top: 15px">
                 <ButtonGroup>
                     <Button variant="outline" size="sm" @click="showVRChatConfig()">
-                        <Operation />
+                        <Settings />
                         VRChat config.json
                     </Button>
                     <Button variant="outline" size="sm" @click="showLaunchOptions()">
-                        <Operation />
+                        <Settings />
                         {{ t('view.settings.advanced.advanced.launch_options') }}
                     </Button>
                     <Button variant="outline" size="sm" @click="showRegistryBackupDialog()">
-                        <Goods />
+                        <Package />
                         {{ t('view.settings.advanced.advanced.vrc_registry_backup') }}
-                    </Button>
-                </ButtonGroup>
-            </div>
-        </div>
-        <div class="options-container">
-            <span class="header">{{ t('view.settings.advanced.advanced.common_folders') }}</span>
-            <div class="options-container-item" style="margin-top: 15px">
-                <ButtonGroup>
-                    <Button variant="outline" size="sm" @click="openVrcxAppDataFolder()">
-                        <Folder />
-                        VRCX Data
-                    </Button>
-                    <Button variant="outline" size="sm" @click="openVrcAppDataFolder()">
-                        <Folder />
-                        VRChat Data
-                    </Button>
-                    <Button variant="outline" size="sm" @click="openCrashVrcCrashDumps()">
-                        <Folder />
-                        Crash Dumps
                     </Button>
                 </ButtonGroup>
             </div>
@@ -76,9 +57,11 @@
                 @change="setSelfInviteOverride" />
 
             <div v-if="branch === 'Nightly'">
-                <span class="sub-header">Anonymous Error Reporting (Nightly Only)</span>
+                <span class="sub-header">{{
+                    t('view.settings.advanced.advanced.anonymous_error_reporting.header')
+                }}</span>
                 <simple-switch
-                    label="Help improve VRCX by sending anonymous error reports. Only collects crash and error information, no personal data or VRChat information is collected."
+                    :label="t('view.settings.advanced.advanced.anonymous_error_reporting.description')"
                     :value="sentryErrorReporting"
                     :long-label="true"
                     @change="setSentryErrorReporting()" />
@@ -90,10 +73,10 @@
                 <div class="x-friend-item">
                     <div class="detail" @click="getVisits">
                         <span class="name">{{ t('view.profile.game_info.online_users') }}</span>
-                        <span v-if="visits" class="extra">{{
+                        <span v-if="visits" class="block truncate text-xs">{{
                             t('view.profile.game_info.user_online', { count: visits })
                         }}</span>
-                        <span v-else class="extra">{{ t('view.profile.game_info.refresh') }}</span>
+                        <span v-else class="block truncate text-xs">{{ t('view.profile.game_info.refresh') }}</span>
                     </div>
                 </div>
             </div>
@@ -159,10 +142,10 @@
                 :long-label="true"
                 @change="changeTranslationAPI('VRCX_translationAPI')" />
             <div class="options-container-item">
-                <Button size="sm" variant="outline" @click="showTranslationApiDialog"
-                    ><i class="ri-translate-2" style="margin-right: 5px"></i
-                    >{{ t('view.settings.advanced.advanced.translation_api.translation_api_key') }}</Button
-                >
+                <Button size="sm" variant="outline" @click="showTranslationApiDialog">
+                    <Languages class="h-4 w-4" style="margin-right: 5px" />
+                    {{ t('view.settings.advanced.advanced.translation_api.translation_api_key') }}
+                </Button>
             </div>
         </div>
         <div class="options-container">
@@ -384,13 +367,11 @@
 </template>
 
 <script setup>
-    import { Folder, Goods, Operation } from '@element-plus/icons-vue';
+    import { Languages, Package, RefreshCcw, Settings, Trash2 } from 'lucide-vue-next';
     import { computed, reactive, ref } from 'vue';
-    import { RefreshCcw, Trash2 } from 'lucide-vue-next';
     import { Button } from '@/components/ui/button';
     import { ButtonGroup } from '@/components/ui/button-group';
     import { storeToRefs } from 'pinia';
-    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
     import VueJsonPretty from 'vue-json-pretty';
@@ -502,36 +483,6 @@
     });
 
     const isLinux = computed(() => LINUX);
-
-    function openVrcxAppDataFolder() {
-        AppApi.OpenVrcxAppDataFolder().then((result) => {
-            if (result) {
-                toast.success('Folder opened');
-            } else {
-                toast.error("Folder dosn't exist");
-            }
-        });
-    }
-
-    function openVrcAppDataFolder() {
-        AppApi.OpenVrcAppDataFolder().then((result) => {
-            if (result) {
-                toast.success('Folder opened');
-            } else {
-                toast.error("Folder dosn't exist");
-            }
-        });
-    }
-
-    function openCrashVrcCrashDumps() {
-        AppApi.OpenCrashVrcCrashDumps().then((result) => {
-            if (result) {
-                toast.success('Folder opened');
-            } else {
-                toast.error("Folder dosn't exist");
-            }
-        });
-    }
 
     function openShortcutFolder() {
         AppApi.OpenShortcutFolder();

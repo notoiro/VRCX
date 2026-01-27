@@ -1,6 +1,7 @@
-import { computed, reactive, ref, shallowReactive, watch } from 'vue';
+import { computed, nextTick, reactive, ref, shallowReactive, watch } from 'vue';
 import { defineStore } from 'pinia';
 import { toast } from 'vue-sonner';
+import { useI18n } from 'vue-i18n';
 
 import Noty from 'noty';
 
@@ -30,7 +31,6 @@ import {
 import { processBulk, request } from '../service/request';
 import { AppDebug } from '../service/appConfig';
 import { database } from '../service/database';
-import { formatJsonVars } from '../shared/utils/base/ui';
 import { useAppearanceSettingsStore } from './settings/appearance';
 import { useAuthStore } from './auth';
 import { useAvatarStore } from './avatar';
@@ -47,6 +47,7 @@ import { useNotificationStore } from './notification';
 import { usePhotonStore } from './photon';
 import { useSearchStore } from './search';
 import { useSharedFeedStore } from './sharedFeed';
+import { useUiStore } from './ui';
 import { useWorldStore } from './world';
 import { watchState } from '../service/watchState';
 
@@ -67,9 +68,11 @@ export const useUserStore = defineStore('User', () => {
     const groupStore = useGroupStore();
     const feedStore = useFeedStore();
     const worldStore = useWorldStore();
+    const uiStore = useUiStore();
     const moderationStore = useModerationStore();
     const photonStore = usePhotonStore();
     const sharedFeedStore = useSharedFeedStore();
+    const { t } = useI18n();
 
     const currentUser = ref({
         acceptedPrivacyVersion: 0,
@@ -179,6 +182,8 @@ export const useUserStore = defineStore('User', () => {
     const userDialog = ref({
         visible: false,
         loading: false,
+        activeTab: 'Info',
+        lastActiveTab: 'Info',
         id: '',
         ref: {},
         friend: {},
@@ -230,7 +235,6 @@ export const useUserStore = defineStore('User', () => {
         },
         avatarSorting: 'update',
         avatarReleaseStatus: 'all',
-        treeData: {},
         memo: '',
         $avatarInfo: {
             ownerId: '',
@@ -308,6 +312,7 @@ export const useUserStore = defineStore('User', () => {
                 customUserTags.clear();
                 state.notes.clear();
                 subsetOfLanguages.value = [];
+                uiStore.clearDialogCrumbs();
             }
         },
         { flush: 'sync' }
@@ -406,7 +411,7 @@ export const useUserStore = defineStore('User', () => {
      * @param {Map<string, any>} friendMap
      */
     function cleanupUserCache(userCache, friendMap) {
-        const bufferSize = 200;
+        const bufferSize = 300;
 
         const currentFriendCount = friendMap.size;
         const currentTotalSize = userCache.size;
@@ -630,17 +635,11 @@ export const useUserStore = defineStore('User', () => {
                     ...ref
                 });
                 currentTravelers.set(ref.id, travelRef);
-                sharedFeedStore.sharedFeed.pendingUpdate = true;
-                sharedFeedStore.updateSharedFeed(false);
                 onPlayerTraveling(travelRef);
             }
         } else {
             ref.$location = parseLocation(ref.location);
-            if (currentTravelers.has(ref.id)) {
-                currentTravelers.delete(ref.id);
-                sharedFeedStore.sharedFeed.pendingUpdate = true;
-                sharedFeedStore.updateSharedFeed(false);
-            }
+            currentTravelers.delete(ref.id);
         }
         if (
             !instanceStore.cachedInstances.has(ref.$location.tag) &&
@@ -731,8 +730,6 @@ export const useUserStore = defineStore('User', () => {
             } else if (D.ref.friendRequestStatus === 'outgoing') {
                 D.outgoingRequest = true;
             }
-            // refresh user dialog JSON tab
-            refreshUserDialogTreeData();
         }
         if (hasPropChanged) {
             if (
@@ -759,7 +756,7 @@ export const useUserStore = defineStore('User', () => {
      *
      * @param {string} userId
      */
-    function showUserDialog(userId) {
+    function showUserDialog(userId, options = {}) {
         if (
             !userId ||
             typeof userId !== 'string' ||
@@ -767,9 +764,14 @@ export const useUserStore = defineStore('User', () => {
         ) {
             return;
         }
+        uiStore.openDialog({
+            type: 'user',
+            id: userId,
+            skipBreadcrumb: options.skipBreadcrumb
+        });
         const D = userDialog.value;
+        D.visible = true;
         D.id = userId;
-        D.treeData = {};
         D.memo = '';
         D.note = '';
         getUserMemo(userId).then((memo) => {
@@ -786,7 +788,7 @@ export const useUserStore = defineStore('User', () => {
                 }
             }
         });
-        D.visible = true;
+
         D.loading = true;
         D.avatars = [];
         D.worlds = [];
@@ -842,14 +844,19 @@ export const useUserStore = defineStore('User', () => {
             })
             .catch((err) => {
                 D.loading = false;
-                D.visible = false;
-                toast.error('Failed to load user');
+                uiStore.closeMainDialog();
+                toast.error(t('message.user.load_failed'));
                 throw err;
             })
             .then((args) => {
                 if (args.ref.id === D.id) {
                     requestAnimationFrame(() => {
                         D.ref = args.ref;
+                        uiStore.setDialogCrumbLabel(
+                            'user',
+                            D.id,
+                            D.ref?.displayName || D.id
+                        );
                         D.friend = friendStore.friends.get(D.id);
                         D.isFriend = Boolean(D.friend);
                         D.note = String(D.ref.note || '');
@@ -882,9 +889,11 @@ export const useUserStore = defineStore('User', () => {
                         } else if (D.ref.friendRequestStatus === 'outgoing') {
                             D.outgoingRequest = true;
                         }
-                        applyUserDialogLocation(true);
-
-                        userRequest.getUser(args.params);
+                        userRequest.getUser(args.params).then((args1) => {
+                            if (args1.ref.id === D.id) {
+                                D.loading = false;
+                            }
+                        });
                         let inCurrentWorld = false;
                         if (
                             locationStore.lastLocation.playerList.has(D.ref.id)
@@ -999,7 +1008,8 @@ export const useUserStore = defineStore('User', () => {
                             .then((args1) => {
                                 groupStore.handleGroupRepresented(args1);
                             });
-                        D.loading = false;
+                        D.visible = true;
+                        applyUserDialogLocation(true);
                     });
                 }
             });
@@ -1222,18 +1232,6 @@ export const useUserStore = defineStore('User', () => {
                 }
             }
         });
-    }
-
-    function refreshUserDialogTreeData() {
-        const D = userDialog.value;
-        if (D.id === currentUser.value.id) {
-            D.treeData = formatJsonVars({
-                ...currentUser.value,
-                ...D.ref
-            });
-            return;
-        }
-        D.treeData = formatJsonVars(D.ref);
     }
 
     async function lookupUser(ref) {
@@ -1651,7 +1649,7 @@ export const useUserStore = defineStore('User', () => {
             ref.$customTag = data.Tag;
             ref.$customTagColour = data.TagColour;
         }
-        sharedFeedStore.updateSharedFeed(true);
+        sharedFeedStore.addTag(data.UserId, data.TagColour);
     }
 
     async function initUserNotes() {
@@ -2049,7 +2047,6 @@ export const useUserStore = defineStore('User', () => {
         applyUserDialogLocation,
         sortUserDialogAvatars,
         refreshUserDialogAvatars,
-        refreshUserDialogTreeData,
         lookupUser,
         updateAutoStateChange,
         addCustomTag,

@@ -66,11 +66,6 @@ export const useNotificationStore = defineStore('Notification', () => {
                 value: ''
             }
         ],
-        tableProps: {
-            stripe: true,
-            size: 'small',
-            defaultSort: null
-        },
         pageSize: 20,
         pageSizeLinked: true,
         paginationProps: {
@@ -80,7 +75,7 @@ export const useNotificationStore = defineStore('Notification', () => {
     const unseenNotifications = ref([]);
     const isNotificationsLoading = ref(false);
 
-    const notyMap = ref([]);
+    const notyMap = {};
 
     watch(
         () => watchState.isLoggedIn,
@@ -146,10 +141,10 @@ export const useNotificationStore = defineStore('Notification', () => {
                 }
                 unseenNotifications.value.push(ref.id);
                 queueNotificationNoty(ref);
+                sharedFeedStore.addEntry(ref);
             }
         }
         notificationTable.value.data.push(ref);
-        sharedFeedStore.updateSharedFeed(true);
         const D = userStore.userDialog;
         if (
             D.visible === false ||
@@ -416,7 +411,7 @@ export const useNotificationStore = defineStore('Notification', () => {
         }
         if (ref.type === 'boop') {
             ref.message = ref.title;
-            if (ref.details?.emojiId.startsWith('default_')) {
+            if (ref.details?.emojiId?.startsWith('default_')) {
                 ref.details.imageUrl = ref.details.emojiId;
                 ref.message += ` ${ref.details.emojiId.replace('default_', '')}`;
             } else {
@@ -611,15 +606,17 @@ export const useNotificationStore = defineStore('Notification', () => {
         if (displayName) {
             // don't play noty twice
             const notyId = `${noty.type},${displayName}`;
-            if (
-                notyMap.value[notyId] &&
-                notyMap.value[notyId] >= noty.created_at
-            ) {
+            if (notyMap[notyId] && notyMap[notyId] >= noty.created_at) {
                 return;
             }
-            notyMap.value[notyId] = noty.created_at;
+            notyMap[notyId] = noty.created_at;
         }
         const bias = new Date(Date.now() - 60000).toJSON();
+        for (const [notyId, createdAt] of Object.entries(notyMap)) {
+            if (createdAt < bias) {
+                delete notyMap[notyId];
+            }
+        }
         if (noty.created_at < bias) {
             // don't play noty if it's over 1min old
             return;
@@ -966,7 +963,7 @@ export const useNotificationStore = defineStore('Notification', () => {
                     fileId,
                     fileVersion
                 );
-            } else if (imageUrl) {
+            } else if (imageUrl && imageUrl.startsWith('http')) {
                 fileVersion = imageUrl.split('/').pop(); // 1416226261.thumbnail-500.png
                 fileId = fileVersion.split('.').shift(); // 1416226261
                 imageLocation = await AppApi.GetImage(
@@ -2337,6 +2334,14 @@ export const useNotificationStore = defineStore('Notification', () => {
         refreshNotifications();
     }
 
+    function testNotification() {
+        playNoty({
+            type: 'Event',
+            created_at: new Date().toJSON(),
+            data: 'Notification Test'
+        });
+    }
+
     return {
         notificationInitStatus,
         notificationTable,
@@ -2358,6 +2363,7 @@ export const useNotificationStore = defineStore('Notification', () => {
         handleNotificationV2Update,
         handleNotificationHide,
         handleNotification,
-        handleNotificationV2
+        handleNotificationV2,
+        testNotification
     };
 });

@@ -1,6 +1,7 @@
 import { nextTick, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import { toast } from 'vue-sonner';
+import { useI18n } from 'vue-i18n';
 
 import {
     checkVRChatCache,
@@ -18,6 +19,7 @@ import { useAdvancedSettingsStore } from './settings/advanced';
 import { useAvatarProviderStore } from './avatarProvider';
 import { useFavoriteStore } from './favorite';
 import { useModalStore } from './modal';
+import { useUiStore } from './ui';
 import { useUserStore } from './user';
 import { useVRCXUpdaterStore } from './vrcxUpdater';
 import { watchState } from '../service/watchState';
@@ -31,6 +33,8 @@ export const useAvatarStore = defineStore('Avatar', () => {
     const advancedSettingsStore = useAdvancedSettingsStore();
     const userStore = useUserStore();
     const modalStore = useModalStore();
+    const uiStore = useUiStore();
+    const { t } = useI18n();
 
     let cachedAvatarModerations = new Map();
     let cachedAvatars = new Map();
@@ -39,6 +43,8 @@ export const useAvatarStore = defineStore('Avatar', () => {
     const avatarDialog = ref({
         visible: false,
         loading: false,
+        activeTab: 'Info',
+        lastActiveTab: 'Info',
         id: '',
         memo: '',
         ref: {},
@@ -50,7 +56,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
         isPC: false,
         isQuest: false,
         isIos: false,
-        bundleSizes: [],
+        bundleSizes: {},
         platformInfo: {},
         galleryImages: [],
         galleryLoading: false,
@@ -59,7 +65,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
         cacheSize: '',
         cacheLocked: false,
         cachePath: '',
-        fileAnalysis: []
+        fileAnalysis: {}
     });
     const avatarHistory = ref([]);
 
@@ -170,16 +176,21 @@ export const useAvatarStore = defineStore('Avatar', () => {
      * @param {string} avatarId
      * @returns
      */
-    function showAvatarDialog(avatarId) {
+    function showAvatarDialog(avatarId, options = {}) {
         const D = avatarDialog.value;
-        D.visible = true;
+        uiStore.openDialog({
+            type: 'avatar',
+            id: avatarId,
+            skipBreadcrumb: options.skipBreadcrumb
+        });
+
         D.loading = true;
         D.id = avatarId;
         D.inCache = false;
         D.cacheSize = '';
         D.cacheLocked = false;
         D.cachePath = '';
-        D.fileAnalysis = [];
+        D.fileAnalysis = {};
         D.isQuestFallback = false;
         D.isPC = false;
         D.isQuest = false;
@@ -187,7 +198,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
         D.hasImposter = false;
         D.imposterVersion = '';
         D.lastUpdated = '';
-        D.bundleSizes = [];
+        D.bundleSizes = {};
         D.platformInfo = {};
         D.galleryImages = [];
         D.galleryLoading = true;
@@ -199,20 +210,27 @@ export const useAvatarStore = defineStore('Avatar', () => {
         const ref2 = cachedAvatars.get(avatarId);
         if (typeof ref2 !== 'undefined') {
             D.ref = ref2;
-            updateVRChatAvatarCache();
+            uiStore.setDialogCrumbLabel('avatar', D.id, D.ref?.name || D.id);
             if (
                 ref2.releaseStatus !== 'public' &&
                 ref2.authorId !== userStore.currentUser.id
             ) {
                 D.loading = false;
+                uiStore.closeMainDialog();
                 return;
             }
         }
+        D.visible = true;
         avatarRequest
             .getAvatar({ avatarId })
             .then((args) => {
                 const ref = applyAvatar(args.json);
                 D.ref = ref;
+                uiStore.setDialogCrumbLabel(
+                    'avatar',
+                    D.id,
+                    D.ref?.name || D.id
+                );
                 getAvatarGallery(avatarId);
                 updateVRChatAvatarCache();
                 if (/quest/.test(ref.tags)) {
@@ -233,7 +251,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
                         break;
                     }
                 }
-                if (D.bundleSizes.length === 0) {
+                if (Object.keys(D.bundleSizes).length === 0) {
                     getBundleDateSize(ref).then((bundleSizes) => {
                         D.bundleSizes = bundleSizes;
                     });
@@ -392,7 +410,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
     function promptClearAvatarHistory() {
         modalStore
             .confirm({
-                description: 'Continue? Clear Avatar History',
+                description: t('confirm.clear_avatar_history'),
                 title: 'Confirm'
             })
             .then(({ ok }) => {
@@ -556,7 +574,7 @@ export const useAvatarStore = defineStore('Avatar', () => {
     function selectAvatarWithConfirmation(id) {
         modalStore
             .confirm({
-                description: 'Continue? Select Avatar',
+                description: t('confirm.select_avatar'),
                 title: 'Confirm'
             })
             .then(({ ok }) => {
