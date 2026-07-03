@@ -1,6 +1,6 @@
 <template>
     <Dialog :open="sendInviteResponseDialogVisible" @update:open="(open) => (open ? null : cancelSendInviteResponse())">
-        <DialogContent>
+        <DialogContent class="x-dialog sm:max-w-200">
             <DialogHeader>
                 <DialogTitle>{{ t('dialog.invite_response_message.header') }}</DialogTitle>
             </DialogHeader>
@@ -9,7 +9,7 @@
             </template>
 
             <DataTableLayout
-                style="margin-top: 10px"
+                style="margin-top: 8px"
                 :table="inviteResponseTable"
                 :loading="false"
                 :show-pagination="false"
@@ -92,29 +92,49 @@
 
     const { table: inviteResponseTable } = useVrcxVueTable({
         persistKey: 'invite-response-message',
-        data: inviteResponseRows,
+        get data() {
+            return inviteResponseRows.value;
+        },
         columns: inviteResponseColumns,
         getRowId: (row) => String(row?.slot ?? ''),
         enablePagination: false,
         initialSorting: [{ id: 'slot', desc: false }]
     });
 
+    /**
+     *
+     * @param row
+     */
     function handleInviteResponseRowClick(row) {
         showSendInviteResponseConfirmDialog(row?.original);
     }
 
+    /**
+     *
+     */
     function closeInviteDialog() {
         cancelSendInviteResponse();
     }
 
+    /**
+     *
+     */
     function cancelSendInviteResponse() {
         emit('update:sendInviteResponseDialogVisible', false);
     }
 
+    /**
+     *
+     */
     function closeResponseConfirmDialog() {
         sendInviteResponseConfirmDialog.value.visible = false;
+        editAndSendInviteResponseDialog.value.visible = false;
     }
 
+    /**
+     *
+     * @param row
+     */
     function showEditAndSendInviteResponseDialog(row) {
         emit('update:sendInviteResponseDialog', { ...props.sendInviteResponseDialog, messageSlot: row });
         editAndSendInviteResponseDialog.value = {
@@ -122,6 +142,10 @@
             visible: true
         };
     }
+    /**
+     *
+     * @param row
+     */
     function showSendInviteResponseConfirmDialog(row) {
         emit('update:sendInviteResponseDialog', { ...props.sendInviteResponseDialog, messageSlot: row });
         sendInviteResponseConfirmDialog.value.visible = true;

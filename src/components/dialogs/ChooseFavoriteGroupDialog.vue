@@ -30,6 +30,27 @@
                     </Button>
                 </template>
             </div>
+            <div v-if="favoriteDialog.type === 'friend'" style="margin-top: 20px">
+                <span style="display: block; text-align: center">{{ t('dialog.favorite.local_favorites') }}</span>
+                <template v-for="group in localFriendFavoriteGroups" :key="group">
+                    <Button
+                        variant="outline"
+                        v-if="hasLocalFriendFavorite(favoriteDialog.objectId, group)"
+                        style="width: 100%; white-space: initial"
+                        class="my-1"
+                        @click="removeLocalFriendFavorite(favoriteDialog.objectId, group)">
+                        <Check />{{ group }} ({{ localFriendFavGroupLength(group) }})
+                    </Button>
+                    <Button
+                        variant="outline"
+                        v-else
+                        style="width: 100%; white-space: initial"
+                        class="my-1"
+                        @click="addLocalFriendFavorite(favoriteDialog.objectId, group)">
+                        {{ group }} ({{ localFriendFavGroupLength(group) }})
+                    </Button>
+                </template>
+            </div>
             <div v-if="favoriteDialog.type === 'world'" style="margin-top: 20px">
                 <span style="display: block; text-align: center">{{ t('dialog.favorite.local_favorites') }}</span>
                 <template v-for="group in localWorldFavoriteGroups" :key="group">
@@ -83,11 +104,18 @@
     import { Button } from '@/components/ui/button';
     import { Check } from 'lucide-vue-next';
     import { storeToRefs } from 'pinia';
+    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import Noty from 'noty';
-
     import { useFavoriteStore, useUserStore } from '../../stores';
+    import {
+        addLocalWorldFavorite,
+        removeLocalWorldFavorite,
+        addLocalAvatarFavorite,
+        removeLocalAvatarFavorite,
+        addLocalFriendFavorite,
+        removeLocalFriendFavorite
+    } from '../../coordinators/favoriteCoordinator';
     import { favoriteRequest } from '../../api';
 
     const { t } = useI18n();
@@ -99,18 +127,17 @@
         favoriteWorldGroups,
         favoriteDialog,
         localWorldFavoriteGroups,
-        localAvatarFavoriteGroups
+        localAvatarFavoriteGroups,
+        localFriendFavoriteGroups
     } = storeToRefs(favoriteStore);
     const {
         localWorldFavGroupLength,
-        addLocalWorldFavorite,
         hasLocalWorldFavorite,
         hasLocalAvatarFavorite,
-        addLocalAvatarFavorite,
         localAvatarFavGroupLength,
-        removeLocalAvatarFavorite,
-        removeLocalWorldFavorite,
-        deleteFavoriteNoConfirm
+        deleteFavoriteNoConfirm,
+        localFriendFavGroupLength,
+        hasLocalFriendFavorite
     } = favoriteStore;
     const { isLocalUserVrcPlusSupporter } = storeToRefs(useUserStore());
 
@@ -133,6 +160,9 @@
         }
     );
 
+    /**
+     * @returns {void}
+     */
     function initFavoriteDialog() {
         if (favoriteDialog.value.type === 'friend') {
             groups.value = favoriteFriendGroups.value;
@@ -143,6 +173,11 @@
         }
     }
 
+    /**
+     *
+     * @param {object} group
+     * @returns {void}
+     */
     function addFavorite(group) {
         const D = favoriteDialog.value;
         loading.value = true;
@@ -154,7 +189,7 @@
             })
             .then(() => {
                 isVisible.value = false;
-                new Noty({ type: 'success', text: 'Favorite added!' }).show();
+                toast.success('Favorite added!');
             })
             .finally(() => {
                 loading.value = false;

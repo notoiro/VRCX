@@ -7,7 +7,7 @@ import { useModalStore } from '../modal';
 import { useVRCXUpdaterStore } from '../vrcxUpdater';
 import { useVrcxStore } from '../vrcx';
 
-import configRepository from '../../service/config';
+import configRepository from '../../services/config';
 
 import * as workerTimers from 'worker-timers';
 
@@ -28,12 +28,22 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
     const udonExceptionLogging = ref(false);
     const logResourceLoad = ref(false);
     const logEmptyAvatars = ref(false);
+    const autoLoginDelayEnabled = ref(false);
+    const autoLoginDelaySeconds = ref(0);
     const autoStateChangeEnabled = ref(false);
     const autoStateChangeAloneStatus = ref('join me');
     const autoStateChangeCompanyStatus = ref('busy');
     const autoStateChangeInstanceTypes = ref([]);
     const autoStateChangeNoFriends = ref(false);
+    const autoStateChangeAloneDescEnabled = ref(false);
+    const autoStateChangeAloneDesc = ref('');
+    const autoStateChangeCompanyDescEnabled = ref(false);
+    const autoStateChangeCompanyDesc = ref('');
+    const autoStateChangeGroups = ref([]);
     const autoAcceptInviteRequests = ref('Off');
+    const autoAcceptInviteGroups = ref([]);
+    const recentActionCooldownEnabled = ref(false);
+    const recentActionCooldownMinutes = ref(60);
 
     async function initGeneralSettings() {
         const [
@@ -47,12 +57,22 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             udonExceptionLoggingConfig,
             logResourceLoadConfig,
             logEmptyAvatarsConfig,
+            autoLoginDelayEnabledConfig,
+            autoLoginDelaySecondsConfig,
             autoStateChangeEnabledConfig,
             autoStateChangeAloneStatusConfig,
             autoStateChangeCompanyStatusConfig,
             autoStateChangeInstanceTypesStrConfig,
             autoStateChangeNoFriendsConfig,
-            autoAcceptInviteRequestsConfig
+            autoStateChangeAloneDescEnabledConfig,
+            autoStateChangeAloneDescConfig,
+            autoStateChangeCompanyDescEnabledConfig,
+            autoStateChangeCompanyDescConfig,
+            autoStateChangeGroupsStrConfig,
+            autoAcceptInviteRequestsConfig,
+            autoAcceptInviteGroupsStrConfig,
+            recentActionCooldownEnabledConfig,
+            recentActionCooldownMinutesConfig
         ] = await Promise.all([
             configRepository.getBool('VRCX_StartAtWindowsStartup', false),
             VRCXStorage.Get('VRCX_StartAsMinimizedState'),
@@ -64,6 +84,8 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             configRepository.getBool('VRCX_udonExceptionLogging', false),
             configRepository.getBool('VRCX_logResourceLoad', false),
             configRepository.getBool('VRCX_logEmptyAvatars', false),
+            configRepository.getBool('VRCX_autoLoginDelayEnabled', false),
+            configRepository.getInt('VRCX_autoLoginDelaySeconds', 0),
             configRepository.getBool('VRCX_autoStateChangeEnabled', false),
             configRepository.getString(
                 'VRCX_autoStateChangeAloneStatus',
@@ -78,7 +100,21 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
                 '[]'
             ),
             configRepository.getBool('VRCX_autoStateChangeNoFriends', false),
-            configRepository.getString('VRCX_autoAcceptInviteRequests', 'Off')
+            configRepository.getBool(
+                'VRCX_autoStateChangeAloneDescEnabled',
+                false
+            ),
+            configRepository.getString('VRCX_autoStateChangeAloneDesc', ''),
+            configRepository.getBool(
+                'VRCX_autoStateChangeCompanyDescEnabled',
+                false
+            ),
+            configRepository.getString('VRCX_autoStateChangeCompanyDesc', ''),
+            configRepository.getString('VRCX_autoStateChangeGroups', '[]'),
+            configRepository.getString('VRCX_autoAcceptInviteRequests', 'Off'),
+            configRepository.getString('VRCX_autoAcceptInviteGroups', '[]'),
+            configRepository.getBool('VRCX_recentActionCooldownEnabled', false),
+            configRepository.getInt('VRCX_recentActionCooldownMinutes', 60)
         ]);
 
         isStartAtWindowsStartup.value = isStartAtWindowsStartupConfig;
@@ -107,6 +143,8 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         udonExceptionLogging.value = udonExceptionLoggingConfig;
         logResourceLoad.value = logResourceLoadConfig;
         logEmptyAvatars.value = logEmptyAvatarsConfig;
+        autoLoginDelayEnabled.value = autoLoginDelayEnabledConfig;
+        autoLoginDelaySeconds.value = autoLoginDelaySecondsConfig;
         autoStateChangeEnabled.value = autoStateChangeEnabledConfig;
         autoStateChangeAloneStatus.value = autoStateChangeAloneStatusConfig;
         autoStateChangeCompanyStatus.value = autoStateChangeCompanyStatusConfig;
@@ -114,7 +152,21 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             autoStateChangeInstanceTypesStrConfig
         );
         autoStateChangeNoFriends.value = autoStateChangeNoFriendsConfig;
+        autoStateChangeAloneDescEnabled.value =
+            autoStateChangeAloneDescEnabledConfig;
+        autoStateChangeAloneDesc.value = autoStateChangeAloneDescConfig;
+        autoStateChangeCompanyDescEnabled.value =
+            autoStateChangeCompanyDescEnabledConfig;
+        autoStateChangeCompanyDesc.value = autoStateChangeCompanyDescConfig;
+        autoStateChangeGroups.value = JSON.parse(
+            autoStateChangeGroupsStrConfig
+        );
         autoAcceptInviteRequests.value = autoAcceptInviteRequestsConfig;
+        autoAcceptInviteGroups.value = JSON.parse(
+            autoAcceptInviteGroupsStrConfig
+        );
+        recentActionCooldownEnabled.value = recentActionCooldownEnabledConfig;
+        recentActionCooldownMinutes.value = recentActionCooldownMinutesConfig;
     }
 
     initGeneralSettings();
@@ -179,6 +231,40 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         logEmptyAvatars.value = !logEmptyAvatars.value;
         configRepository.setBool('VRCX_logEmptyAvatars', logEmptyAvatars.value);
     }
+    function setAutoLoginDelayEnabled() {
+        autoLoginDelayEnabled.value = !autoLoginDelayEnabled.value;
+        configRepository.setBool(
+            'VRCX_autoLoginDelayEnabled',
+            autoLoginDelayEnabled.value
+        );
+    }
+    function setAutoLoginDelaySeconds(value) {
+        const parsed = parseInt(value, 10);
+        autoLoginDelaySeconds.value = Number.isNaN(parsed)
+            ? 0
+            : Math.min(10, Math.max(0, parsed));
+        configRepository.setInt(
+            'VRCX_autoLoginDelaySeconds',
+            autoLoginDelaySeconds.value
+        );
+    }
+    function promptAutoLoginDelaySeconds() {
+        modalStore
+            .prompt({
+                title: t('prompt.auto_login_delay.header'),
+                description: t('prompt.auto_login_delay.description'),
+                inputValue: String(autoLoginDelaySeconds.value),
+                pattern: /^(10|[0-9])$/,
+                errorMessage: t('prompt.auto_login_delay.input_error')
+            })
+            .then(({ ok, value }) => {
+                if (!ok) return;
+                setAutoLoginDelaySeconds(value);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    }
     function setAutoStateChangeEnabled() {
         autoStateChangeEnabled.value = !autoStateChangeEnabled.value;
         configRepository.setBool(
@@ -220,6 +306,53 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             autoStateChangeNoFriends.value
         );
     }
+    function setAutoStateChangeAloneDescEnabled() {
+        autoStateChangeAloneDescEnabled.value =
+            !autoStateChangeAloneDescEnabled.value;
+        configRepository.setBool(
+            'VRCX_autoStateChangeAloneDescEnabled',
+            autoStateChangeAloneDescEnabled.value
+        );
+    }
+    /**
+     * @param {string} value
+     */
+    function setAutoStateChangeAloneDesc(value) {
+        autoStateChangeAloneDesc.value = value;
+        configRepository.setString(
+            'VRCX_autoStateChangeAloneDesc',
+            autoStateChangeAloneDesc.value
+        );
+    }
+    function setAutoStateChangeCompanyDescEnabled() {
+        autoStateChangeCompanyDescEnabled.value =
+            !autoStateChangeCompanyDescEnabled.value;
+        configRepository.setBool(
+            'VRCX_autoStateChangeCompanyDescEnabled',
+            autoStateChangeCompanyDescEnabled.value
+        );
+    }
+    /**
+     * @param {string} value
+     */
+    function setAutoStateChangeCompanyDesc(value) {
+        autoStateChangeCompanyDesc.value = value;
+        configRepository.setString(
+            'VRCX_autoStateChangeCompanyDesc',
+            autoStateChangeCompanyDesc.value
+        );
+    }
+    /**
+     * @param {Array} value
+     */
+    function setAutoStateChangeGroups(value) {
+        autoStateChangeGroups.value = value;
+        configRepository.setString(
+            'VRCX_autoStateChangeGroups',
+            JSON.stringify(autoStateChangeGroups.value)
+        );
+    }
+
     /**
      * @param {string} value
      */
@@ -228,6 +361,17 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         configRepository.setString(
             'VRCX_autoAcceptInviteRequests',
             autoAcceptInviteRequests.value
+        );
+    }
+
+    /**
+     * @param {string[]} value
+     */
+    function setAutoAcceptInviteGroups(value) {
+        autoAcceptInviteGroups.value = value;
+        configRepository.setString(
+            'VRCX_autoAcceptInviteGroups',
+            JSON.stringify(autoAcceptInviteGroups.value)
         );
     }
 
@@ -243,7 +387,7 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             })
             .then(async ({ ok, value }) => {
                 if (ok) {
-                    vrcxStore.proxyServer = value;
+                    vrcxStore.setProxyServer(value);
                     await VRCXStorage.Set(
                         'VRCX_ProxyServer',
                         vrcxStore.proxyServer
@@ -275,6 +419,28 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             });
     }
 
+    function setRecentActionCooldownEnabled() {
+        recentActionCooldownEnabled.value = !recentActionCooldownEnabled.value;
+        configRepository.setBool(
+            'VRCX_recentActionCooldownEnabled',
+            recentActionCooldownEnabled.value
+        );
+    }
+
+    /**
+     * @param {number} value
+     */
+    function setRecentActionCooldownMinutes(value) {
+        const parsed = parseInt(value, 10);
+        recentActionCooldownMinutes.value = Number.isNaN(parsed)
+            ? 60
+            : Math.min(1440, Math.max(1, parsed));
+        configRepository.setInt(
+            'VRCX_recentActionCooldownMinutes',
+            recentActionCooldownMinutes.value
+        );
+    }
+
     return {
         isStartAtWindowsStartup,
         isStartAsMinimizedState,
@@ -285,12 +451,22 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         udonExceptionLogging,
         logResourceLoad,
         logEmptyAvatars,
+        autoLoginDelayEnabled,
+        autoLoginDelaySeconds,
         autoStateChangeEnabled,
         autoStateChangeAloneStatus,
         autoStateChangeCompanyStatus,
         autoStateChangeInstanceTypes,
         autoStateChangeNoFriends,
+        autoStateChangeAloneDescEnabled,
+        autoStateChangeAloneDesc,
+        autoStateChangeCompanyDescEnabled,
+        autoStateChangeCompanyDesc,
+        autoStateChangeGroups,
         autoAcceptInviteRequests,
+        autoAcceptInviteGroups,
+        recentActionCooldownEnabled,
+        recentActionCooldownMinutes,
 
         setIsStartAtWindowsStartup,
         setIsStartAsMinimizedState,
@@ -301,12 +477,22 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         setUdonExceptionLogging,
         setLogResourceLoad,
         setLogEmptyAvatars,
+        setAutoLoginDelayEnabled,
+        promptAutoLoginDelaySeconds,
         setAutoStateChangeEnabled,
         setAutoStateChangeAloneStatus,
         setAutoStateChangeCompanyStatus,
         setAutoStateChangeInstanceTypes,
         setAutoStateChangeNoFriends,
+        setAutoStateChangeAloneDescEnabled,
+        setAutoStateChangeAloneDesc,
+        setAutoStateChangeCompanyDescEnabled,
+        setAutoStateChangeCompanyDesc,
+        setAutoStateChangeGroups,
         setAutoAcceptInviteRequests,
-        promptProxySettings
+        setAutoAcceptInviteGroups,
+        promptProxySettings,
+        setRecentActionCooldownEnabled,
+        setRecentActionCooldownMinutes
     };
 });

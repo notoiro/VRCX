@@ -1,60 +1,65 @@
 import { defineStore } from 'pinia';
-import { i18n } from '@/plugin';
 import { ref } from 'vue';
-
-function translate(key, fallback) {
-    try {
-        return i18n.global.t(key);
-    } catch {
-        return fallback;
-    }
-}
+import { useI18n } from 'vue-i18n';
 
 /**
- * @typedef {Object} ConfirmResult
+ * @typedef {object} ConfirmResult
  * @property {boolean} ok
  * @property {'ok' | 'cancel' | 'dismiss' | 'replaced'} reason
  */
 
 /**
- * @typedef {Object} ConfirmOptions
+ * @typedef {object} ConfirmOptions
  * @property {string} title
  * @property {string} description
  * @property {string=} confirmText
  * @property {string=} cancelText
  * @property {boolean=} dismissible  // true: allow esc/outside, false: block
+ * @property {boolean=} destructive  // true: use destructive variant for confirm button
  */
 
 /**
- * @typedef {Object} AlertOptions
+ * @typedef {object} AlertOptions
  * @property {string} title
  * @property {string} description
  * @property {string=} confirmText
  * @property {boolean=} dismissible
+ * @property {boolean=} destructive  // true: use destructive variant for confirm button
  */
 
 /**
- * @typedef {Object} PromptResult
+ * @typedef {object} PromptResult
  * @property {boolean} ok
  * @property {'ok' | 'cancel' | 'dismiss' | 'replaced'} reason
  * @property {string} value
  */
 
 /**
- * @typedef {Object} PromptOptions
+ * @typedef {object} PromptOptions
  * @property {string} title
  * @property {string} description
  * @property {string=} confirmText
  * @property {string=} cancelText
  * @property {string=} inputValue
+ * @property {string=} inputType
  * @property {RegExp | string=} pattern
  * @property {string=} errorMessage
  * @property {boolean=} dismissible
  */
 
-// TODO: Method chains for confirm
+/**
+ * @typedef {object} OtpPromptOptions
+ * @property {string} title
+ * @property {string} description
+ * @property {'totp' | 'emailOtp' | 'otp'} mode
+ * @property {string=} confirmText
+ * @property {string=} cancelText
+ * @property {boolean=} dismissible
+ */
 
 export const useModalStore = defineStore('Modal', () => {
+    const { t } = useI18n();
+
     const alertOpen = ref(false);
     const alertMode = ref('confirm'); // 'confirm' | 'alert'
     const alertTitle = ref('');
@@ -62,6 +67,7 @@ export const useModalStore = defineStore('Modal', () => {
     const alertOkText = ref('');
     const alertCancelText = ref('');
     const alertDismissible = ref(true);
+    const alertDestructive = ref(false);
 
     const promptOpen = ref(false);
     const promptTitle = ref('');
@@ -70,13 +76,24 @@ export const useModalStore = defineStore('Modal', () => {
     const promptCancelText = ref('');
     const promptDismissible = ref(true);
     const promptInputValue = ref('');
+    const promptInputType = ref('text');
     const promptPattern = ref(null);
     const promptErrorMessage = ref('');
+
+    const otpOpen = ref(false);
+    const otpTitle = ref('');
+    const otpDescription = ref('');
+    const otpOkText = ref('');
+    const otpCancelText = ref('');
+    const otpDismissible = ref(true);
+    const otpMode = ref('totp'); // 'totp' | 'emailOtp' | 'otp'
 
     /** @type {{ resolve: ((result: ConfirmResult) => void) | null } | null} */
     let pending = null;
     /** @type {{ resolve: ((result: PromptResult) => void) | null } | null} */
     let pendingPrompt = null;
+    /** @type {{ resolve: ((result: PromptResult) => void) | null } | null} */
+    let pendingOtp = null;
 
     function closeDialog() {
         alertOpen.value = false;
@@ -141,18 +158,17 @@ export const useModalStore = defineStore('Modal', () => {
         alertTitle.value = options.title;
         alertDescription.value = options.description;
         alertDismissible.value = options.dismissible !== false;
+        alertDestructive.value = options.destructive === true;
 
         if (mode === 'alert') {
             alertOkText.value =
-                options.confirmText || translate('dialog.alertdialog.ok', 'OK');
+                options.confirmText || t('dialog.alertdialog.ok');
             alertCancelText.value = '';
         } else {
             alertOkText.value =
-                options.confirmText ||
-                translate('dialog.alertdialog.confirm', 'Confirm');
+                options.confirmText || t('dialog.alertdialog.confirm');
             alertCancelText.value =
-                options.cancelText ||
-                translate('dialog.alertdialog.cancel', 'Cancel');
+                options.cancelText || t('dialog.alertdialog.cancel');
         }
 
         alertOpen.value = true;
@@ -181,17 +197,15 @@ export const useModalStore = defineStore('Modal', () => {
         promptDescription.value = options.description;
         promptDismissible.value = options.dismissible !== false;
         promptInputValue.value = inputValueCopy;
+        promptInputType.value = options.inputType || 'text';
         promptPattern.value = options.pattern ?? null;
         promptErrorMessage.value =
-            options.errorMessage ||
-            translate('dialog.prompt.input_invalid', '输入错误');
+            options.errorMessage || t('dialog.prompt.input_invalid');
 
         promptOkText.value =
-            options.confirmText ||
-            translate('dialog.alertdialog.confirm', 'Confirm');
+            options.confirmText || t('dialog.alertdialog.confirm');
         promptCancelText.value =
-            options.cancelText ||
-            translate('dialog.alertdialog.cancel', 'Cancel');
+            options.cancelText || t('dialog.alertdialog.cancel');
 
         promptOpen.value = true;
 
@@ -281,6 +295,88 @@ export const useModalStore = defineStore('Modal', () => {
         promptOpen.value = !!open;
     }
 
+    // --- OTP dialog ---
+
+    function closeOtpDialog() {
+        otpOpen.value = false;
+    }
+
+    /**
+     * @param {'ok' | 'cancel' | 'dismiss' | 'replaced'} reason
+     * @param {string} value
+     */
+    function finishOtp(reason, value) {
+        const resolve = pendingOtp?.resolve;
+        pendingOtp = null;
+        closeOtpDialog();
+        if (resolve) resolve({ ok: reason === 'ok', reason, value });
+    }
+
+    /**
+     * @param {'ok' | 'cancel' | 'dismiss' | 'replaced'} reason
+     * @param {string} value
+     */
+    function finishOtpWithoutClosing(reason, value) {
+        const resolve = pendingOtp?.resolve;
+        pendingOtp = null;
+        if (resolve) resolve({ ok: reason === 'ok', reason, value });
+    }
+
+    /**
+     * @param {OtpPromptOptions} options
+     * @returns {Promise<PromptResult>}
+     */
+    function openOtp(options) {
+        if (pendingOtp) {
+            finishOtpWithoutClosing('replaced', '');
+        }
+
+        otpTitle.value = options.title;
+        otpDescription.value = options.description;
+        otpDismissible.value = options.dismissible !== false;
+        otpMode.value = options.mode || 'totp';
+
+        otpOkText.value =
+            options.confirmText || t('dialog.alertdialog.confirm');
+        otpCancelText.value =
+            options.cancelText || t('dialog.alertdialog.cancel');
+
+        otpOpen.value = true;
+
+        return new Promise((resolve) => {
+            pendingOtp = { resolve };
+        });
+    }
+
+    /**
+     * otpPrompt: always resolve({ok, reason, value})
+     * @param {OtpPromptOptions} options
+     * @returns {Promise<PromptResult>}
+     */
+    function otpPrompt(options) {
+        return openOtp(options);
+    }
+
+    function handleOtpOk(value) {
+        if (!pendingOtp) return;
+        finishOtp('ok', value ?? '');
+    }
+
+    function handleOtpCancel(value) {
+        if (!pendingOtp) return;
+        finishOtp('cancel', value ?? '');
+    }
+
+    function handleOtpDismiss(value) {
+        if (!pendingOtp) return;
+        if (!otpDismissible.value) return;
+        finishOtp('dismiss', value ?? '');
+    }
+
+    function setOtpOpen(open) {
+        otpOpen.value = !!open;
+    }
+
     return {
         alertOpen,
         alertMode,
@@ -289,6 +385,7 @@ export const useModalStore = defineStore('Modal', () => {
         alertOkText,
         alertCancelText,
         alertDismissible,
+        alertDestructive,
         promptOpen,
         promptTitle,
         promptDescription,
@@ -296,12 +393,21 @@ export const useModalStore = defineStore('Modal', () => {
         promptCancelText,
         promptDismissible,
         promptInputValue,
+        promptInputType,
         promptPattern,
         promptErrorMessage,
+        otpOpen,
+        otpTitle,
+        otpDescription,
+        otpOkText,
+        otpCancelText,
+        otpDismissible,
+        otpMode,
 
         confirm,
         alert,
         prompt,
+        otpPrompt,
 
         handleOk,
         handleCancel,
@@ -310,6 +416,10 @@ export const useModalStore = defineStore('Modal', () => {
         handlePromptCancel,
         handlePromptDismiss,
         setAlertOpen,
-        setPromptOpen
+        setPromptOpen,
+        handleOtpOk,
+        handleOtpCancel,
+        handleOtpDismiss,
+        setOtpOpen
     };
 });

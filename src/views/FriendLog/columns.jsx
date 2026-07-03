@@ -3,20 +3,19 @@ import { Button } from '../../components/ui/button';
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger
 } from '../../components/ui/tooltip';
 import { ArrowRight, ArrowUpDown, Trash2, X } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 
 import { formatDateFilter } from '../../shared/utils';
-import { i18n } from '../../plugin';
-import { useUiStore, useUserStore } from '../../stores';
+import { i18n } from '../../plugins';
+import { useUiStore } from '../../stores';
+import { showUserDialog } from '../../coordinators/userCoordinator';
 
 const { t } = i18n.global;
 
 export const createColumns = ({ onDelete, onDeletePrompt }) => {
-    const { showUserDialog } = useUserStore();
     const { shiftHeld } = storeToRefs(useUiStore());
 
     return [
@@ -32,6 +31,7 @@ export const createColumns = ({ onDelete, onDeletePrompt }) => {
         {
             accessorKey: 'created_at',
             size: 120,
+            meta: { label: () => t('table.friendLog.date') },
             header: ({ column }) => (
                 <Button
                     variant="ghost"
@@ -49,16 +49,14 @@ export const createColumns = ({ onDelete, onDeletePrompt }) => {
                 const longText = formatDateFilter(createdAt, 'long');
 
                 return (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span>{shortText}</span>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                                <span>{longText}</span>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span>{shortText}</span>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <span>{longText}</span>
+                        </TooltipContent>
+                    </Tooltip>
                 );
             }
         },
@@ -67,6 +65,7 @@ export const createColumns = ({ onDelete, onDeletePrompt }) => {
 
             size: 160,
             header: () => t('table.friendLog.type'),
+            meta: { label: () => t('table.friendLog.type') },
             cell: ({ row }) => {
                 const type = row.getValue('type');
                 return (
@@ -82,7 +81,8 @@ export const createColumns = ({ onDelete, onDeletePrompt }) => {
             minSize: 80,
             header: () => t('table.friendLog.user'),
             meta: {
-                stretch: true
+                stretch: true,
+                label: () => t('table.friendLog.user')
             },
             cell: ({ row }) => {
                 const original = row.original;
@@ -116,7 +116,8 @@ export const createColumns = ({ onDelete, onDeletePrompt }) => {
         {
             id: 'action',
             meta: {
-                class: 'w-[80px] max-w-[80px] text-right'
+                class: 'w-[80px] max-w-[80px] text-right',
+                label: () => t('table.friendLog.action')
             },
             size: 80,
             maxSize: 80,
@@ -128,7 +129,7 @@ export const createColumns = ({ onDelete, onDeletePrompt }) => {
                     <div class="flex justify-end">
                         <button
                             type="button"
-                            class="inline-flex h-6 items-center justify-center text-muted-foreground hover:text-foreground"
+                            class="inline-flex h-6 items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
                             onClick={() =>
                                 shiftHeld.value
                                     ? onDelete(original)

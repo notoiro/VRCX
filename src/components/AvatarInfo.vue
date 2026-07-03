@@ -1,13 +1,16 @@
 <template>
     <div @click="confirm" class="cursor-pointer w-fit align-top flex items-center">
-        <span class="flex items-center"
-            >{{ avatarName }} <Lock v-if="avatarType && avatarType === '(own)'" class="h-4 w-4 mx-1"
+        <span v-if="avatarName" class="flex items-center mr-1"
+            >{{ avatarName }} <Lock v-if="avatarType && avatarType === '(own)'" class="h-4 w-4 ml-1"
         /></span>
+        <span v-else class="flex items-center mr-1 text-muted-foreground">{{
+            t('dialog.user.info.unknown_avatar')
+        }}</span>
         <TooltipWrapper v-if="avatarTags">
             <template #content>
                 <span class="truncate">{{ avatarTags }}</span>
             </template>
-            <span style="font-size: 12px" class="truncate">{{ avatarTags }}</span>
+            <span class="truncate text-xs text-muted-foreground">{{ avatarTags }}</span>
         </TooltipWrapper>
     </div>
 </template>
@@ -15,11 +18,12 @@
 <script setup>
     import { ref, watch } from 'vue';
     import { Lock } from 'lucide-vue-next';
+    import { useI18n } from 'vue-i18n';
 
     import { TooltipWrapper } from './ui/tooltip';
-    import { useAvatarStore } from '../stores';
+    import { getAvatarName, showAvatarAuthorDialog } from '../coordinators/avatarCoordinator';
 
-    const avatarStore = useAvatarStore();
+    const { t } = useI18n();
 
     const props = defineProps({
         imageurl: String,
@@ -49,7 +53,7 @@
             ownerId = props.hintownerid;
         } else {
             try {
-                const info = await avatarStore.getAvatarName(props.imageurl);
+                const info = await getAvatarName(props.imageurl);
                 avatarName.value = info.avatarName;
                 ownerId = info.ownerId;
             } catch {
@@ -72,7 +76,7 @@
 
     const confirm = () => {
         if (!props.imageurl) return;
-        avatarStore.showAvatarAuthorDialog(props.userid, ownerId, props.imageurl);
+        showAvatarAuthorDialog(props.userid, ownerId, props.imageurl);
     };
 
     watch([() => props.imageurl, () => props.userid, () => props.avatartags], parse, { immediate: true });

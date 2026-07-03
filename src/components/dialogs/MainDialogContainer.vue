@@ -16,7 +16,10 @@
         DropdownMenuTrigger
     } from '@/components/ui/dropdown-menu';
     import { Dialog, DialogContent } from '@/components/ui/dialog';
-    import { computed } from 'vue';
+    import { ArrowLeft } from 'lucide-vue-next';
+    import { Button } from '@/components/ui/button';
+    import { TooltipWrapper } from '@/components/ui/tooltip';
+    import { computed, ref } from 'vue';
     import { storeToRefs } from 'pinia';
 
     import AvatarDialog from './AvatarDialog/AvatarDialog.vue';
@@ -25,6 +28,7 @@
     import PreviousInstancesListDialog from './PreviousInstancesDialog/PreviousInstancesListDialog.vue';
     import UserDialog from './UserDialog/UserDialog.vue';
     import WorldDialog from './WorldDialog/WorldDialog.vue';
+    import GroupMemberModerationDialog from './GroupDialog/GroupMemberModerationDialog.vue';
 
     const avatarStore = useAvatarStore();
     const groupStore = useGroupStore();
@@ -34,6 +38,20 @@
     const worldStore = useWorldStore();
 
     const { previousInstancesInfoDialog, previousInstancesListDialog } = storeToRefs(instanceStore);
+
+    const previousIds = ref({
+        userDialog: {
+            mutualFriend: null,
+            group: null,
+            avatar: null,
+            world: null,
+            favoriteWorld: null
+        }
+    });
+
+    function updateUserPreviousId(key, value) {
+        previousIds.value.userDialog[key] = value;
+    }
 
     const dialogCrumbs = computed(() => uiStore.dialogCrumbs);
     const activeType = computed(() => {
@@ -55,6 +73,9 @@
             }
             if (groupStore.groupDialog.visible) {
                 return 'group';
+            }
+            if (groupStore.groupMemberModeration.visible) {
+                return 'group-member-moderation';
             }
             return null;
         })();
@@ -78,12 +99,16 @@
                 return PreviousInstancesListDialog;
             case 'previous-instances-group':
                 return PreviousInstancesListDialog;
+            case 'group-member-moderation':
+                return GroupMemberModerationDialog;
             default:
                 return null;
         }
     });
     const activeComponentProps = computed(() => {
         switch (activeType.value) {
+            case 'user':
+                return { previousIds: previousIds.value.userDialog, updatePreviousId: updateUserPreviousId };
             case 'previous-instances-user':
                 return { variant: 'user' };
             case 'previous-instances-world':
@@ -106,11 +131,13 @@
     const dialogClass = computed(() => {
         switch (activeType.value) {
             case 'world':
-                return 'x-dialog x-world-dialog translate-y-0 sm:max-w-235';
+                return 'x-dialog translate-y-0 sm:max-w-235 overflow-hidden flex flex-col';
             case 'avatar':
-                return 'x-dialog x-avatar-dialog sm:max-w-235 translate-y-0';
+                return 'x-dialog sm:max-w-235 translate-y-0 overflow-hidden flex flex-col';
             case 'group':
-                return 'x-dialog x-group-dialog group-body translate-y-0 sm:max-w-235';
+                return 'x-dialog translate-y-0 sm:max-w-235 overflow-hidden flex flex-col';
+            case 'group-member-moderation':
+                return 'x-dialog translate-y-0 max-w-none flex flex-col sm:min-w-[90vw] sm:max-w-[90vw] sm:min-h-[80vh] sm:max-h-[80vh]';
             case 'previous-instances-info':
             case 'previous-instances-user':
             case 'previous-instances-world':
@@ -118,7 +145,7 @@
                 return 'x-dialog translate-y-0 sm:max-w-250';
             case 'user':
             default:
-                return 'x-dialog x-user-dialog sm:max-w-235 translate-y-0';
+                return 'x-dialog sm:max-w-235 translate-y-0 overflow-hidden flex flex-col';
         }
     });
 
@@ -130,62 +157,46 @@
         }
         return dialogCrumbs.value.slice(1, -2);
     });
+    const backCrumbLabel = computed(() => {
+        if (dialogCrumbs.value.length < 2) {
+            return '';
+        }
+        const backCrumb = dialogCrumbs.value[dialogCrumbs.value.length - 2];
+        return backCrumb?.label || backCrumb?.id || '';
+    });
 
-    const handleBreadcrumbClick = (index) => {
-        const item = dialogCrumbs.value[index];
-        if (!item) {
-            return;
-        }
-        uiStore.jumpDialogCrumb(index);
-        if (item.type === 'user') {
-            userStore.showUserDialog(item.id, { skipBreadcrumb: true });
-            return;
-        }
-        if (item.type === 'world') {
-            worldStore.showWorldDialog(item.id, null, { skipBreadcrumb: true });
-            return;
-        }
-        if (item.type === 'avatar') {
-            avatarStore.showAvatarDialog(item.id, { skipBreadcrumb: true });
-            return;
-        }
-        if (item.type === 'group') {
-            groupStore.showGroupDialog(item.id, { skipBreadcrumb: true });
-            return;
-        }
-        if (item.type === 'previous-instances-user') {
-            instanceStore.showPreviousInstancesListDialog('user', item.id, { skipBreadcrumb: true });
-            return;
-        }
-        if (item.type === 'previous-instances-world') {
-            instanceStore.showPreviousInstancesListDialog('world', item.id, { skipBreadcrumb: true });
-            return;
-        }
-        if (item.type === 'previous-instances-group') {
-            instanceStore.showPreviousInstancesListDialog('group', item.id, { skipBreadcrumb: true });
-            return;
-        }
-        if (item.type === 'previous-instances-info') {
-            instanceStore.showPreviousInstancesInfoDialog(item.id, { skipBreadcrumb: true });
-        }
-    };
+    function handleBreadcrumbClick(index) {
+        uiStore.handleBreadcrumbClick(index);
+    }
 </script>
 
 <template>
     <Dialog v-if="isOpen" v-model:open="isOpen">
         <DialogContent :class="dialogClass" style="top: 10vh" :show-close-button="false">
-            <Breadcrumb v-if="shouldShowBreadcrumbs" class="mb-2">
+            <Breadcrumb v-if="shouldShowBreadcrumbs" class="mb-2 flex-shrink-0">
                 <BreadcrumbList>
+                    <TooltipWrapper :content="backCrumbLabel" :disabled="!backCrumbLabel" :delayDuration="500">
+                        <Button variant="ghost" size="icon-sm" @click="handleBreadcrumbClick(dialogCrumbs.length - 2)">
+                            <ArrowLeft />
+                            <span class="sr-only">{{ backCrumbLabel }}</span>
+                        </Button>
+                    </TooltipWrapper>
                     <template v-if="shouldCollapseBreadcrumbs">
                         <BreadcrumbItem>
-                            <BreadcrumbLink as-child>
-                                <button
-                                    type="button"
-                                    class="max-w-40 truncate text-left"
-                                    @click="handleBreadcrumbClick(0)">
-                                    {{ dialogCrumbs[0]?.label || dialogCrumbs[0]?.id }}
-                                </button>
-                            </BreadcrumbLink>
+                            <TooltipWrapper
+                                :content="dialogCrumbs[0]?.label || dialogCrumbs[0]?.id"
+                                :delayDuration="500">
+                                <BreadcrumbLink as-child>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="max-w-40 justify-start truncate text-left"
+                                        @click="handleBreadcrumbClick(0)">
+                                        {{ dialogCrumbs[0]?.label || dialogCrumbs[0]?.id }}
+                                    </Button>
+                                </BreadcrumbLink>
+                            </TooltipWrapper>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
@@ -205,17 +216,26 @@
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
-                            <BreadcrumbLink as-child>
-                                <button
-                                    type="button"
-                                    class="max-w-40 truncate text-left"
-                                    @click="handleBreadcrumbClick(dialogCrumbs.length - 2)">
-                                    {{
-                                        dialogCrumbs[dialogCrumbs.length - 2]?.label ||
-                                        dialogCrumbs[dialogCrumbs.length - 2]?.id
-                                    }}
-                                </button>
-                            </BreadcrumbLink>
+                            <TooltipWrapper
+                                :content="
+                                    dialogCrumbs[dialogCrumbs.length - 2]?.label ||
+                                    dialogCrumbs[dialogCrumbs.length - 2]?.id
+                                "
+                                :delayDuration="500">
+                                <BreadcrumbLink as-child>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="max-w-40 justify-start truncate text-left"
+                                        @click="handleBreadcrumbClick(dialogCrumbs.length - 2)">
+                                        {{
+                                            dialogCrumbs[dialogCrumbs.length - 2]?.label ||
+                                            dialogCrumbs[dialogCrumbs.length - 2]?.id
+                                        }}
+                                    </Button>
+                                </BreadcrumbLink>
+                            </TooltipWrapper>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
@@ -230,14 +250,21 @@
                     <template v-else>
                         <template v-for="(crumb, index) in dialogCrumbs" :key="`${crumb.type}-${crumb.id}`">
                             <BreadcrumbItem>
-                                <BreadcrumbLink v-if="index < dialogCrumbs.length - 1" as-child>
-                                    <button
-                                        type="button"
-                                        class="max-w-40 truncate text-left"
-                                        @click="handleBreadcrumbClick(index)">
-                                        {{ crumb.label || crumb.id }}
-                                    </button>
-                                </BreadcrumbLink>
+                                <TooltipWrapper
+                                    v-if="index < dialogCrumbs.length - 1"
+                                    :content="crumb.label || crumb.id"
+                                    :delayDuration="500">
+                                    <BreadcrumbLink as-child>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="max-w-40 justify-start truncate text-left"
+                                            @click="handleBreadcrumbClick(index)">
+                                            {{ crumb.label || crumb.id }}
+                                        </Button>
+                                    </BreadcrumbLink>
+                                </TooltipWrapper>
                                 <BreadcrumbPage v-else class="max-w-40 truncate">
                                     {{ crumb.label || crumb.id }}
                                 </BreadcrumbPage>

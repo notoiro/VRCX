@@ -1,44 +1,84 @@
 <template>
-    <div class="x-container feed" ref="feedRef">
+    <div class="x-container feed x-container--auto-height" ref="feedRef">
         <DataTableLayout
             :table="table"
             :loading="feedTable.loading"
-            :table-style="tableHeightStyle"
+            auto-height
             :page-sizes="pageSizes"
             :total-items="totalItems"
             :on-page-size-change="handlePageSizeChange">
             <template #toolbar>
-                <div style="margin: 0 0 10px; display: flex; align-items: center">
-                    <div style="flex: none; margin-right: 10px; display: flex; align-items: center">
+                <div class="mt-0 mx-0 mb-2" style="display: flex; align-items: center">
+                    <div style="flex: none; display: flex; align-items: center" class="mr-2">
+                        <Popover v-model:open="popoverOpen">
+                            <PopoverTrigger as-child>
+                                <Button variant="outline" size="sm" class="mx-2 h-8 gap-1.5">
+                                    <ListFilter class="size-4" />
+                                    {{ t('view.my_avatars.filter') }}
+                                    <Badge
+                                        v-if="activeFilterCount"
+                                        variant="secondary"
+                                        class="ml-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-xs">
+                                        {{ activeFilterCount }}
+                                    </Badge>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent class="w-auto" side="bottom" align="end">
+                                <RangeCalendar
+                                    v-model="dateRange"
+                                    :locale="locale"
+                                    :max-value="todayDate"
+                                    :number-of-months="2"
+                                    :week-starts-on="weekStartsOn" />
+                                <div class="flex justify-end gap-2 mt-3">
+                                    <Button variant="outline" size="sm" @click="clearDateFilter">
+                                        {{ t('common.actions.clear') }}
+                                    </Button>
+                                    <Button size="sm" @click="applyDateFilter">
+                                        {{ t('common.actions.confirm') }}
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                         <TooltipWrapper side="bottom" :content="t('view.feed.favorites_only_tooltip')">
-                            <span class="inline-flex">
-                                <Switch v-model="feedTable.vip" @update:modelValue="feedTableLookup" />
-                            </span>
+                            <div>
+                                <Toggle
+                                    variant="outline"
+                                    size="sm"
+                                    :model-value="feedTable.vip"
+                                    @update:modelValue="
+                                        (v) => {
+                                            feedTable.vip = v;
+                                            feedTableLookup();
+                                        }
+                                    ">
+                                    <Star fill="currentColor" v-if="feedTable.vip" />
+                                    <Star v-else />
+                                </Toggle>
+                            </div>
                         </TooltipWrapper>
                     </div>
-                    <Select
-                        multiple
-                        :model-value="Array.isArray(feedTable.filter) ? feedTable.filter : []"
-                        @update:modelValue="handleFeedFilterChange">
-                        <SelectTrigger class="w-full" style="flex: 1">
-                            <SelectValue :placeholder="t('view.feed.filter_placeholder')" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem
-                                    v-for="type in ['GPS', 'Online', 'Offline', 'Status', 'Avatar', 'Bio']"
-                                    :key="type"
-                                    :value="type">
-                                    {{ t('view.feed.filters.' + type) }}
-                                </SelectItem>
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
+                    <ToggleGroup
+                        type="multiple"
+                        variant="outline"
+                        size="sm"
+                        :model-value="activeFilterSelection"
+                        @update:model-value="handleFeedFilterChange"
+                        class="w-full justify-start"
+                        style="flex: 1">
+                        <ToggleGroupItem value="All">
+                            {{ t('view.search.avatar.all') }}
+                        </ToggleGroupItem>
+                        <ToggleGroupItem v-for="type in feedFilterTypes" :key="type" :value="type">
+                            {{ t('view.feed.filters.' + type) }}
+                        </ToggleGroupItem>
+                    </ToggleGroup>
                     <InputGroupField
+                        class="ml-2"
                         v-model="feedTable.search"
                         :placeholder="t('view.feed.search_placeholder')"
                         clearable
-                        style="flex: 0.4; margin-left: 10px"
+                        style="flex: 0.4"
                         @keyup.enter="feedTableLookup"
                         @change="feedTableLookup" />
                 </div>
@@ -48,61 +88,111 @@
 </template>
 
 <script setup>
-    import { computed, ref, watch } from 'vue';
+    import { computed, ref } from 'vue';
+    import { ListFilter, Star } from 'lucide-vue-next';
+    import { getLocalTimeZone, today } from '@internationalized/date';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
-    import {
-        Select,
-        SelectContent,
-        SelectGroup,
-        SelectItem,
-        SelectTrigger,
-        SelectValue
-    } from '../../components/ui/select';
+    import dayjs from 'dayjs';
+
+    import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
     import { useAppearanceSettingsStore, useFeedStore, useVrcxStore } from '../../stores';
+    import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group';
+    import { Badge } from '../../components/ui/badge';
+    import { Button } from '../../components/ui/button';
     import { DataTableLayout } from '../../components/ui/data-table';
     import { InputGroupField } from '../../components/ui/input-group';
-    import { Switch } from '../../components/ui/switch';
+    import { RangeCalendar } from '../../components/ui/range-calendar';
+    import { Toggle } from '../../components/ui/toggle';
     import { columns as baseColumns } from './columns.jsx';
-    import { useDataTableScrollHeight } from '../../composables/useDataTableScrollHeight';
     import { useVrcxVueTable } from '../../lib/table/useVrcxVueTable';
 
-    const { feedTable } = storeToRefs(useFeedStore());
+    const { feedTable, feedTableData } = storeToRefs(useFeedStore());
     const { feedTableLookup } = useFeedStore();
     const appearanceSettingsStore = useAppearanceSettingsStore();
+    const { weekStartsOn } = storeToRefs(appearanceSettingsStore);
     const vrcxStore = useVrcxStore();
 
-    const feedDisplayData = computed(() => feedTable.value.data.slice().reverse());
+    const { t, locale } = useI18n();
+    const feedFilterTypes = ['GPS', 'Online', 'Offline', 'Status', 'Avatar', 'Bio'];
 
-    const { t } = useI18n();
+    const popoverOpen = ref(false);
+    const todayDate = today(getLocalTimeZone());
+    const dateRange = ref(undefined);
+    const hasDateFilter = computed(() => !!(feedTable.value.dateFrom || feedTable.value.dateTo));
+    const activeFilterCount = computed(() => (hasDateFilter.value ? 1 : 0));
+
+    /**
+     *
+     */
+    function applyDateFilter() {
+        if (dateRange.value?.start) {
+            const s = dateRange.value.start;
+            feedTable.value.dateFrom = dayjs(`${s.year}-${s.month}-${s.day}`).startOf('day').toISOString();
+        } else {
+            feedTable.value.dateFrom = '';
+        }
+        if (dateRange.value?.end) {
+            const e = dateRange.value.end;
+            feedTable.value.dateTo = dayjs(`${e.year}-${e.month}-${e.day}`).endOf('day').toISOString();
+        } else {
+            feedTable.value.dateTo = '';
+        }
+        popoverOpen.value = false;
+        feedTableLookup();
+    }
+
+    /**
+     *
+     */
+    function clearDateFilter() {
+        dateRange.value = undefined;
+        feedTable.value.dateFrom = '';
+        feedTable.value.dateTo = '';
+        popoverOpen.value = false;
+        feedTableLookup();
+    }
 
     const feedRef = ref(null);
 
-    // TODO: simplify
-    const { tableStyle: tableHeightStyle } = useDataTableScrollHeight(feedRef, {
-        offset: 30,
-        toolbarHeight: 54,
-        paginationHeight: 52
-    });
-
     const pageSizes = computed(() => appearanceSettingsStore.tablePageSizes);
-    const pageSize = computed(() =>
-        feedTable.value.pageSizeLinked ? appearanceSettingsStore.tablePageSize : feedTable.value.pageSize
-    );
+
+    /**
+     *
+     * @param row
+     */
+    function getFeedRowId(row) {
+        if (row?.id != null) return `id:${row.id}`;
+        if (row?.rowId != null) return `row:${row.rowId}`;
+
+        const type = row?.type ?? '';
+        const createdAt = row?.created_at ?? row?.createdAt ?? '';
+        const userId = row?.userId ?? row?.senderUserId ?? '';
+        const location = row?.location ?? row?.details?.location ?? '';
+        const message = row?.message ?? '';
+
+        return `${type}:${createdAt}:${userId}:${location}:${message}:${Date.now()}`;
+    }
 
     const { table, pagination } = useVrcxVueTable({
+        get data() {
+            return feedTableData.value;
+        },
         persistKey: 'feed',
-        data: feedDisplayData,
         columns: baseColumns,
-        getRowId: (row) => `${row.type}:${row.rowId}:${row.created_at ?? ''}`,
+        getRowId: getFeedRowId,
         enableExpanded: true,
         getRowCanExpand: () => true,
         initialSorting: [],
         initialExpanded: {},
         initialPagination: {
             pageIndex: 0,
-            pageSize: pageSize.value
+            pageSize: appearanceSettingsStore.tablePageSize
+        },
+        tableOptions: {
+            autoResetExpanded: false,
+            autoResetPageIndex: false
         }
     });
 
@@ -113,27 +203,55 @@
     });
 
     const handlePageSizeChange = (size) => {
-        if (feedTable.value.pageSizeLinked) {
-            appearanceSettingsStore.setTablePageSize(size);
-        } else {
-            feedTable.value.pageSize = size;
-        }
-    };
-
-    function handleFeedFilterChange(value) {
-        feedTable.value.filter = Array.isArray(value) ? value : [];
-        feedTableLookup();
-    }
-
-    watch(pageSize, (size) => {
-        if (pagination.value.pageSize === size) {
-            return;
-        }
         pagination.value = {
             ...pagination.value,
             pageIndex: 0,
             pageSize: size
         };
-        table.setPageSize(size);
+    };
+
+    const activeFilterSelection = computed(() => {
+        const filter = feedTable.value.filter;
+        if (!Array.isArray(filter) || filter.length === 0) {
+            return ['All'];
+        }
+        return filter;
     });
+
+    /**
+     *
+     * @param value
+     */
+    function handleFeedFilterChange(value) {
+        const selected = Array.isArray(value) ? value : [];
+        const wasAll = activeFilterSelection.value.includes('All');
+        const hasAll = selected.includes('All');
+        const types = selected.filter((v) => v !== 'All');
+
+        if (hasAll && !wasAll) {
+            feedTable.value.filter = [];
+        } else if (wasAll && types.length) {
+            feedTable.value.filter = types;
+        } else {
+            feedTable.value.filter = types.length === feedFilterTypes.length ? [] : types.length ? types : [];
+        }
+        feedTableLookup();
+    }
 </script>
+
+<style scoped>
+    .feed :deep(.x-text-removed) {
+        text-decoration: line-through;
+        color: #ff0000;
+        background-color: rgba(255, 0, 0, 0.2);
+        padding: 2px 2px;
+        border-radius: 4px;
+    }
+
+    .feed :deep(.x-text-added) {
+        color: rgb(35, 188, 35);
+        background-color: rgba(76, 255, 80, 0.2);
+        padding: 2px 2px;
+        border-radius: 4px;
+    }
+</style>

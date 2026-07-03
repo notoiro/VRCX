@@ -1,3 +1,5 @@
+import { toolNavDefinitions } from './tools';
+
 const navDefinitions = [
     {
         key: 'feed',
@@ -84,11 +86,32 @@ const navDefinitions = [
         routeName: 'notification'
     },
     {
-        key: 'charts',
-        icon: 'ri-bar-chart-line',
-        tooltip: 'nav_tooltip.charts',
-        labelKey: 'nav_tooltip.charts',
-        routeName: 'charts'
+        key: 'my-avatars',
+        icon: 'ri-contacts-book-3-line',
+        tooltip: 'nav_tooltip.my_avatars',
+        labelKey: 'nav_tooltip.my_avatars',
+        routeName: 'my-avatars'
+    },
+    {
+        key: 'charts-instance',
+        icon: 'ri-bar-chart-horizontal-line',
+        tooltip: 'view.charts.instance_activity.header',
+        labelKey: 'view.charts.instance_activity.header',
+        routeName: 'charts-instance'
+    },
+    {
+        key: 'charts-mutual',
+        icon: 'ri-group-2-line',
+        tooltip: 'view.charts.mutual_friend.tab_label',
+        labelKey: 'view.charts.mutual_friend.tab_label',
+        routeName: 'charts-mutual'
+    },
+    {
+        key: 'charts-hot-worlds',
+        icon: 'ri-fire-line',
+        tooltip: 'view.charts.hot_worlds.tab_label',
+        labelKey: 'view.charts.hot_worlds.tab_label',
+        routeName: 'charts-hot-worlds'
     },
     {
         key: 'tools',
@@ -103,7 +126,8 @@ const navDefinitions = [
         tooltip: 'prompt.direct_access_omni.header',
         labelKey: 'prompt.direct_access_omni.header',
         action: 'direct-access'
-    }
+    },
+    ...toolNavDefinitions
 ];
 
 export { navDefinitions };

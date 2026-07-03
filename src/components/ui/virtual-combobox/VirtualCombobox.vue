@@ -1,14 +1,21 @@
 <template>
     <Popover v-model:open="isOpen">
         <PopoverTrigger as-child>
-            <Button variant="outline" size="sm" role="combobox" class="w-full justify-between" :disabled="disabled">
+            <Button variant="outline" role="combobox" class="w-full justify-between" :disabled="disabled">
                 <slot name="trigger" :text="selectionSummaryText" :clear="clearSelection">
                     <span class="truncate">
                         {{ selectionSummaryText || placeholder }}
                     </span>
                 </slot>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">
+                    <button
+                        v-if="clearable && selectedValueSet.size > 0"
+                        type="button"
+                        class="flex items-center justify-center rounded-sm opacity-50 hover:opacity-100 cursor-pointer"
+                        @click.stop.prevent="clearSelection">
+                        <X class="size-3.5" />
+                    </button>
                     <span class="opacity-60">▾</span>
                 </div>
             </Button>
@@ -43,7 +50,7 @@
                             <template v-else>
                                 <button
                                     type="button"
-                                    class="flex w-full items-center gap-2 px-2 text-left"
+                                    class="flex w-full items-center gap-2 px-2 text-left cursor-pointer"
                                     :style="{ height: `${itemHeight}px` }"
                                     @click="toggleSelection(virtualListEntries[virtualRow.index].value)">
                                     <slot
@@ -78,6 +85,7 @@
     import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
+    import { X } from 'lucide-vue-next';
     import { useVirtualizer } from '@tanstack/vue-virtual';
 
     const props = defineProps({
@@ -133,13 +141,24 @@
 
             if (!filteredItems.length) continue;
 
+            const selected = [];
+            const unselected = [];
+            for (const item of filteredItems) {
+                if (selectedValueSet.value.has(String(item.value))) {
+                    selected.push(item);
+                } else {
+                    unselected.push(item);
+                }
+            }
+            const sortedItems = [...selected, ...unselected];
+
             entries.push({
                 type: 'group',
                 key: `group:${group?.key ?? ''}`,
                 group
             });
 
-            for (const item of filteredItems) {
+            for (const item of sortedItems) {
                 entries.push({
                     type: 'item',
                     key: `item:${group?.key ?? ''}:${item?.value}`,

@@ -1,165 +1,185 @@
 <template>
-    <div ref="instanceActivityRef" class="pt-12">
-        <BackToTop :target="instanceActivityRef" :right="30" :bottom="30" :teleport="false" />
-        <div class="options-container instance-activity" style="margin-top: 0">
-            <div>
-                <span>{{ t('view.charts.instance_activity.header') }}</span>
-                <HoverCard>
-                    <HoverCardTrigger as-child>
-                        <Info style="margin-left: 4px; font-size: 12px; opacity: 0.7" />
-                    </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="start" class="w-75">
-                        <div class="tips-popover">
-                            <div>{{ t('view.charts.instance_activity.tips.online_time') }}</div>
-                            <div>{{ t('view.charts.instance_activity.tips.click_Y_axis') }}</div>
-                            <div>{{ t('view.charts.instance_activity.tips.click_instance_name') }}</div>
-                        </div>
-                    </HoverCardContent>
-                </HoverCard>
-            </div>
-
-            <div>
-                <TooltipWrapper :content="t('view.charts.instance_activity.refresh')" side="top">
-                    <Button
-                        class="rounded-full"
-                        size="icon"
-                        variant="ghost"
-                        style="margin-right: 5px"
-                        @click="reloadData">
-                        <RefreshCcw />
-                    </Button>
-                </TooltipWrapper>
-
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <div>
-                            <TooltipWrapper :content="t('view.charts.instance_activity.settings.header')" side="top">
-                                <Button class="rounded-full" size="icon" variant="ghost" style="margin-right: 5px">
-                                    <Settings />
-                                </Button>
-                            </TooltipWrapper>
-                        </div>
-                    </PopoverTrigger>
-                    <PopoverContent side="bottom" class="w-62.5">
-                        <div class="settings">
+    <div id="chart" class="x-container">
+        <div ref="instanceActivityRef" class="pt-12">
+            <BackToTop :target="instanceActivityRef" :right="30" :bottom="30" :teleport="false" />
+            <div class="options-container flex items-center justify-between mt-0">
+                <div class="flex items-center justify-between">
+                    <span class="shrink-0">{{ t('view.charts.instance_activity.header') }}</span>
+                    <HoverCard>
+                        <HoverCardTrigger as-child>
+                            <Info class="ml-1 text-xs opacity-70" />
+                        </HoverCardTrigger>
+                        <HoverCardContent side="bottom" align="start" class="w-75">
                             <div>
-                                <span>{{ t('view.charts.instance_activity.settings.bar_width') }}</span>
-                                <div>
-                                    <Slider
-                                        v-model="barWidthDraftValue"
-                                        :max="50"
-                                        :min="1"
-                                        @valueCommit="handleBarWidthCommit"></Slider>
+                                <div class="mb-1.5 text-xs">
+                                    {{ t('view.charts.instance_activity.tips.online_time') }}
+                                </div>
+                                <div class="mb-1.5 text-xs">
+                                    {{ t('view.charts.instance_activity.tips.click_Y_axis') }}
+                                </div>
+                                <div class="mb-1.5 text-xs flex items-center mt-2">
+                                    {{ t('view.charts.instance_activity.tips.click_instance_name') }}
                                 </div>
                             </div>
-                            <div>
-                                <span>{{ t('view.charts.instance_activity.settings.show_detail') }}</span>
-                                <Switch
-                                    v-model="isDetailVisible"
-                                    @update:modelValue="
-                                        (value) => changeIsDetailInstanceVisible(value, () => handleSettingsChange())
-                                    " />
-                            </div>
-                            <div v-if="isDetailVisible">
-                                <span>{{ t('view.charts.instance_activity.settings.show_solo_instance') }}</span>
-                                <Switch
-                                    v-model="isSoloInstanceVisible"
-                                    @update:modelValue="
-                                        (value) => changeIsSoloInstanceVisible(value, () => handleSettingsChange())
-                                    " />
-                            </div>
-                            <div v-if="isDetailVisible">
-                                <span>{{ t('view.charts.instance_activity.settings.show_no_friend_instance') }}</span>
-                                <Switch
-                                    v-model="isNoFriendInstanceVisible"
-                                    @update:modelValue="
-                                        (value) => changeIsNoFriendInstanceVisible(value, () => handleSettingsChange())
-                                    " />
-                            </div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
-                <ButtonGroup class="mr-2">
-                    <TooltipWrapper :content="t('view.charts.instance_activity.previous_day')" side="top">
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            :disabled="isPrevDayBtnDisabled"
-                            @click="changeSelectedDateFromBtn(false)">
-                            <ArrowLeft />
-                        </Button>
-                    </TooltipWrapper>
-                    <TooltipWrapper :content="t('view.charts.instance_activity.next_day')" side="top">
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            :disabled="isNextDayBtnDisabled"
-                            @click="changeSelectedDateFromBtn(true)">
-                            <ArrowRight />
-                        </Button>
-                    </TooltipWrapper>
-                </ButtonGroup>
-                <Popover v-model:open="isDatePickerOpen">
-                    <PopoverTrigger asChild>
-                        <div>
-                            <Button
-                                variant="outline"
-                                class="w-50 justify-start text-left font-normal"
-                                :disabled="isLoading">
-                                <CalendarIcon class="mr-2 h-4 w-4" />
-                                {{ dayjs(selectedDate).format('YYYY-MM-DD') }}
-                            </Button>
-                        </div>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-auto p-0" align="end">
-                        <Calendar
-                            :model-value="calendarModelValue"
-                            :default-placeholder="defaultCalendarPlaceholder"
-                            :is-date-disabled="isCalendarDateDisabled"
-                            :prevent-deselect="true"
-                            initial-focus
-                            @update:modelValue="handleCalendarModelUpdate" />
-                    </PopoverContent>
-                </Popover>
-            </div>
-        </div>
-        <div class="status-online">
-            <div class="text-center">
-                <div class="text-sm text-muted-foreground">
-                    {{ t('view.charts.instance_activity.online_time') }}
+                        </HoverCardContent>
+                    </HoverCard>
                 </div>
-                <div class="text-2xl font-semibold">
-                    {{ timeToText(totalOnlineTime, true) }}
-                </div>
-            </div>
-        </div>
 
-        <div ref="activityChartRef" style="width: 100%"></div>
-        <div v-if="!isLoading && activityData.length === 0" class="nodata">
-            <DataTableEmpty type="nodata" />
-        </div>
-
-        <transition name="el-fade-in-linear">
-            <div v-show="isDetailVisible && !isLoading && activityData.length !== 0" class="divider">
                 <div class="flex items-center">
-                    <Separator class="flex-1" />
-                    <span class="px-2 text-muted-foreground">·</span>
-                    <Separator class="flex-1" />
+                    <TooltipWrapper :content="t('view.charts.instance_activity.refresh')" side="top">
+                        <Button class="rounded-full mr-1.5" size="icon" variant="ghost" @click="reloadData">
+                            <RefreshCcw />
+                        </Button>
+                    </TooltipWrapper>
+
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <div>
+                                <TooltipWrapper
+                                    :content="t('view.charts.instance_activity.settings.header')"
+                                    side="top">
+                                    <Button class="rounded-full mr-1.5" size="icon" variant="ghost">
+                                        <Settings />
+                                    </Button>
+                                </TooltipWrapper>
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" class="w-62.5">
+                            <div>
+                                <div class="flex items-center justify-between px-0.5 h-[30px]">
+                                    <span class="shrink-0">{{
+                                        t('view.charts.instance_activity.settings.bar_width')
+                                    }}</span>
+                                    <div class="w-40 ml-5">
+                                        <Slider
+                                            v-model="barWidthDraftValue"
+                                            :max="50"
+                                            :min="1"
+                                            @valueCommit="handleBarWidthCommit"></Slider>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between px-0.5 h-[30px]">
+                                    <span class="shrink-0">{{
+                                        t('view.charts.instance_activity.settings.show_detail')
+                                    }}</span>
+                                    <Switch
+                                        v-model="isDetailVisible"
+                                        @update:modelValue="
+                                            (value) =>
+                                                changeIsDetailInstanceVisible(value, () => handleSettingsChange())
+                                        " />
+                                </div>
+                                <div v-if="isDetailVisible" class="flex items-center justify-between px-0.5 h-[30px]">
+                                    <span class="shrink-0">{{
+                                        t('view.charts.instance_activity.settings.show_solo_instance')
+                                    }}</span>
+                                    <Switch
+                                        v-model="isSoloInstanceVisible"
+                                        @update:modelValue="
+                                            (value) => changeIsSoloInstanceVisible(value, () => handleSettingsChange())
+                                        " />
+                                </div>
+                                <div v-if="isDetailVisible" class="flex items-center justify-between px-0.5 h-[30px]">
+                                    <span class="shrink-0">{{
+                                        t('view.charts.instance_activity.settings.show_no_friend_instance')
+                                    }}</span>
+                                    <Switch
+                                        v-model="isNoFriendInstanceVisible"
+                                        @update:modelValue="
+                                            (value) =>
+                                                changeIsNoFriendInstanceVisible(value, () => handleSettingsChange())
+                                        " />
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    <ButtonGroup class="mr-2">
+                        <TooltipWrapper :content="t('view.charts.instance_activity.previous_day')" side="top">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                :disabled="isPrevDayBtnDisabled"
+                                @click="changeSelectedDateFromBtn(false)">
+                                <ArrowLeft />
+                            </Button>
+                        </TooltipWrapper>
+                        <TooltipWrapper :content="t('view.charts.instance_activity.next_day')" side="top">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                :disabled="isNextDayBtnDisabled"
+                                @click="changeSelectedDateFromBtn(true)">
+                                <ArrowRight />
+                            </Button>
+                        </TooltipWrapper>
+                    </ButtonGroup>
+                    <Popover v-model:open="isDatePickerOpen">
+                        <PopoverTrigger asChild>
+                            <div>
+                                <Button
+                                    variant="outline"
+                                    class="w-50 justify-start text-left font-normal"
+                                    :disabled="isLoading">
+                                    <CalendarIcon class="mr-2 h-4 w-4" />
+                                    {{ dayjs(selectedDate).format('YYYY-MM-DD') }}
+                                </Button>
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent class="w-auto p-0" align="end">
+                            <Calendar
+                                :model-value="calendarModelValue"
+                                :default-placeholder="defaultCalendarPlaceholder"
+                                :is-date-disabled="isCalendarDateDisabled"
+                                :prevent-deselect="true"
+                                :week-starts-on="weekStartsOn"
+                                initial-focus
+                                @update:modelValue="handleCalendarModelUpdate" />
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
-        </transition>
-        <template v-if="isDetailVisible && activityData.length !== 0">
-            <InstanceActivityDetail
-                v-for="arr in filteredActivityDetailData"
-                :key="arr[0].location + arr[0].created_at"
-                ref="activityDetailChartRef"
-                :activity-detail-data="arr"
-                :bar-width="barWidth" />
-        </template>
+            <div class="flex justify-center text-center">
+                <div class="text-center">
+                    <div class="text-sm text-muted-foreground">
+                        {{ t('view.charts.instance_activity.online_time') }}
+                    </div>
+                    <div class="text-2xl font-semibold">
+                        {{ timeToText(totalOnlineTime, true) }}
+                    </div>
+                </div>
+            </div>
+
+            <div ref="activityChartRef" style="width: 100%"></div>
+            <div v-if="!isLoading && activityData.length === 0" class="flex items-center justify-center mt-[100px]">
+                <DataTableEmpty type="nodata" />
+            </div>
+
+            <transition name="el-fade-in-linear">
+                <div
+                    v-show="isDetailVisible && !isLoading && activityData.length !== 0"
+                    class="px-[400px] transition-[top] duration-300 ease-in-out">
+                    <div class="flex items-center">
+                        <Separator class="flex-1" />
+                        <span class="px-2 text-muted-foreground">·</span>
+                        <Separator class="flex-1" />
+                    </div>
+                </div>
+            </transition>
+            <template v-if="isDetailVisible && activityData.length !== 0">
+                <InstanceActivityDetail
+                    v-for="arr in filteredActivityDetailData"
+                    :key="arr[0].location + arr[0].created_at"
+                    ref="activityDetailChartRef"
+                    :activity-detail-data="arr"
+                    :bar-width="barWidth" />
+            </template>
+        </div>
     </div>
 </template>
 
 <script setup>
+    defineOptions({ name: 'ChartsInstance' });
+
     import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { ArrowLeft, ArrowRight, Calendar as CalendarIcon, Info, RefreshCcw, Settings } from 'lucide-vue-next';
     import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -189,15 +209,17 @@
     import { useIntersectionObserver } from '../composables/useIntersectionObserver';
 
     import InstanceActivityDetail from './InstanceActivityDetail.vue';
+    import InstanceActivityTooltip from './InstanceActivityTooltip.jsx';
 
     import * as echarts from 'echarts';
+    import { renderToHtml } from '@/lib/utils';
 
     const appearanceSettingsStore = useAppearanceSettingsStore();
     const friendStore = useFriendStore();
-    const { isDarkMode, dtHour12 } = storeToRefs(appearanceSettingsStore);
-    const { localFavoriteFriends, friends } = storeToRefs(friendStore);
+    const { friends, allFavoriteFriendIds } = storeToRefs(friendStore);
     const { currentUser } = storeToRefs(useUserStore());
     const { t } = useI18n();
+    const { isDarkMode, dtHour12, weekStartsOn } = storeToRefs(appearanceSettingsStore);
 
     const instanceActivityRef = ref(null);
 
@@ -205,6 +227,9 @@
         setInstanceActivityHeight();
     });
 
+    /**
+     *
+     */
     function setInstanceActivityHeight() {
         if (instanceActivityRef.value) {
             const availableHeight = window.innerHeight - 110;
@@ -249,6 +274,10 @@
         }
     });
 
+    /**
+     *
+     * @param value
+     */
     function handleBarWidthCommit(value) {
         changeBarWidth(value?.[0] ?? barWidthDraft.value, () => handleEchartsRerender());
     }
@@ -293,6 +322,10 @@
         return fromDate(selectedDate.value ?? new Date(), calendarTimeZone);
     });
 
+    /**
+     *
+     * @param dateValue
+     */
     function isCalendarDateDisabled(dateValue) {
         try {
             return getDatePickerDisabledDate(toDate(dateValue, calendarTimeZone));
@@ -301,6 +334,10 @@
         }
     }
 
+    /**
+     *
+     * @param dateValue
+     */
     function handleCalendarModelUpdate(dateValue) {
         if (!dateValue) return;
         selectedDate.value = toDate(dateValue, calendarTimeZone);
@@ -363,7 +400,7 @@
     onMounted(async () => {
         try {
             getAllDateOfActivity();
-            await getActivityData(selectedDate, currentUser, friends, localFavoriteFriends, () =>
+            await getActivityData(selectedDate, currentUser, friends, allFavoriteFriendIds, () =>
                 handleIntersectionObserver(activityDetailChartRef)
             );
             await getWorldNameData();
@@ -388,7 +425,7 @@
     reloadData = async function () {
         isLoading.value = true;
         try {
-            await getActivityData(selectedDate, currentUser, friends, localFavoriteFriends, () =>
+            await getActivityData(selectedDate, currentUser, friends, allFavoriteFriendIds, () =>
                 handleIntersectionObserver(activityDetailChartRef)
             );
             await getWorldNameData();
@@ -420,6 +457,10 @@
         }
     };
 
+    /**
+     *
+     * @param params
+     */
     function handleYAxisLabelClick(params) {
         const targetActivity = activityData.value[params?.dataIndex];
         if (!targetActivity) {
@@ -453,6 +494,9 @@
         }
     }
 
+    /**
+     *
+     */
     function getYAxisData() {
         return worldNameArray.value.map((worldName, index) => {
             const activityItem = activityData.value[index];
@@ -469,6 +513,9 @@
         });
     }
 
+    /**
+     *
+     */
     function initEcharts() {
         const chartsHeight = activityData.value.length * (barWidth.value + 10) + 200;
         const chartDom = activityChartRef.value;
@@ -523,7 +570,12 @@
         }
         afterInit();
     }
+    /**
+     *
+     */
     function getNewOption() {
+        // FIXME(kube): this is a bandaid to make the formater shut up
+        // this should be looked at by someone with more experience
         const getTooltip = (params) => {
             const activityDataArray = activityData.value;
             const param = params[1];
@@ -533,31 +585,25 @@
             }
 
             const instanceData = activityDataArray[param.dataIndex];
-
             const format = dtHour12.value ? 'hh:mm:ss A' : 'HH:mm:ss';
 
-            const formattedLeftDateTime = dayjs(instanceData.leaveTime).format(format);
-            const formattedJoinDateTime = dayjs(instanceData.joinTime).format(format);
+            const location = parseLocation(instanceData.location);
 
-            const timeString = timeToText(param.data, true);
-            const color = param.color;
             let name = param.name;
             // jank: remove axis label rich text formatting
             name = name.endsWith('}') ? name.slice(0, -1) : name;
             name = name.replaceAll('{filtered|', '').replaceAll('{normal|', '');
 
-            const location = parseLocation(instanceData.location);
-
-            return `
-                        <div style="display: flex; align-items: center;">
-                            <div style="width: 10px; height: 55px; background-color: ${color}; margin-right: 5px;"></div>
-                            <div>
-                                <div>${name} #${location.instanceName} ${location.accessTypeName}</div>
-                                <div>${formattedJoinDateTime} - ${formattedLeftDateTime}</div>
-                                <div>${timeString}</div>
-                            </div>
-                        </div>
-                    `;
+            return renderToHtml(
+                InstanceActivityTooltip({
+                    color: param.color,
+                    displayName: `${name} #${location.instanceName}`,
+                    icon: location.accessTypeName,
+                    joinTime: dayjs(instanceData.joinTime).format(format),
+                    leaveTime: dayjs(instanceData.leaveTime).format(format),
+                    duration: timeToText(param.data, true)
+                })
+            );
         };
 
         const format = dtHour12.value ? 'hh:mm A' : 'HH:mm';
@@ -663,10 +709,16 @@
         return echartsOption;
     }
 
+    /**
+     *
+     */
     function handleEchartsRerender() {
         initEcharts();
         handleSettingsChange();
     }
+    /**
+     *
+     */
     function handleSettingsChange() {
         handleChangeSettings(activityDetailChartRef);
 
@@ -682,73 +734,3 @@
         });
     }
 </script>
-
-<style lang="scss" scoped>
-    %flex {
-        display: flex;
-        align-items: center;
-    }
-    %flex-between {
-        justify-content: space-between;
-    }
-    .instance-activity {
-        @extend %flex;
-        @extend %flex-between;
-        & > div:first-child {
-            @extend %flex-between;
-        }
-        & > div {
-            @extend %flex;
-            > span {
-                flex-shrink: 0;
-            }
-        }
-    }
-    .tips-popover {
-        & > div {
-            margin-bottom: 5px;
-            font-size: 12px;
-        }
-        & > div:last-child {
-            @extend %flex;
-            margin-top: 10px;
-            i {
-                margin-right: 3px;
-            }
-        }
-    }
-    .settings {
-        & > div {
-            @extend %flex;
-            @extend %flex-between;
-            padding: 0 2px;
-            height: 30px;
-            > span {
-                flex-shrink: 0;
-            }
-        }
-        & > div:first-child {
-            > div {
-                width: 160px;
-                margin-left: 20px;
-            }
-        }
-    }
-
-    .nodata {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: 100px;
-    }
-    .divider {
-        padding: 0 400px;
-        transition: top 0.3s ease;
-    }
-
-    .status-online {
-        display: flex;
-        justify-content: center;
-        text-align: center;
-    }
-</style>

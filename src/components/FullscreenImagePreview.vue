@@ -1,7 +1,8 @@
 <template>
     <Dialog v-model:open="open">
         <DialogPortal :to="portalTo">
-            <RekaDialogOverlay class="fixed inset-0 bg-background/80 backdrop-blur-sm" />
+            <RekaDialogOverlay
+                :class="cn('fixed inset-0 bg-background/80', !disableGpuAcceleration && 'backdrop-blur-sm')" />
 
             <RekaDialogContent
                 class="fixed inset-0 p-6 sm:p-10 border-0 bg-transparent shadow-none outline-none"
@@ -96,21 +97,25 @@
 
 <script setup>
     import { Copy, Download, RefreshCcw, RotateCcw, RotateCw, X, ZoomIn, ZoomOut } from 'lucide-vue-next';
-    import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { useEventListener } from '@vueuse/core';
+    import { computed, onBeforeUnmount, ref, watch } from 'vue';
     import { DialogContent as RekaDialogContent, DialogOverlay as RekaDialogOverlay, DialogPortal } from 'reka-ui';
     import { Button } from '@/components/ui/button';
     import { Dialog } from '@/components/ui/dialog';
     import { acquireModalPortalLayer } from '@/lib/modalPortalLayers';
+    import { cn } from '@/lib/utils';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
+    import { useGeneralSettingsStore } from '@/stores/settings/general';
+    import { useI18n } from 'vue-i18n';
 
-    import Noty from 'noty';
-
-    import { escapeTag, extractFileId } from '../shared/utils';
+    import { extractFileId } from '../shared/utils';
     import { useGalleryStore } from '../stores';
 
     const galleryStore = useGalleryStore();
     const { fullscreenImageDialog } = storeToRefs(galleryStore);
+    const { disableGpuAcceleration } = storeToRefs(useGeneralSettingsStore());
+    const { t } = useI18n();
 
     const viewerEl = ref(null);
     const portalLayer = acquireModalPortalLayer();
@@ -281,12 +286,11 @@
         else if (e.key.toLowerCase() === 'r') rotateCW();
         else if (e.key === '0') resetTransform();
     }
-    onMounted(() => window.addEventListener('keydown', onKeydown));
-    onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
+    useEventListener(window, 'keydown', onKeydown);
 
     async function copyImageToClipboard(url) {
         if (!url) return;
-        const msg = toast.info('Downloading image...');
+        const msg = toast.info(t('message.image.downloading'));
         try {
             const response = await webApiService.execute({ url, method: 'GET' });
             if (response.status !== 200 || !String(response.data).startsWith('data:image/png')) {
@@ -294,10 +298,10 @@
             }
             const blob = await (await fetch(response.data)).blob();
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            toast.success('Image copied to clipboard');
+            toast.success(t('message.image.copied_to_clipboard'));
         } catch (error) {
             console.error('Error downloading image:', error);
-            new Noty({ type: 'error', text: escapeTag(`Failed to download image. ${url}`) }).show();
+            toast.error(`Failed to download image. ${url}`);
         } finally {
             toast.dismiss(msg);
         }
@@ -305,7 +309,7 @@
 
     async function downloadAndSaveImage(url, fileName) {
         if (!url) return;
-        const msg = toast.info('Downloading image...');
+        const msg = toast.info(t('message.image.downloading'));
         try {
             const response = await webApiService.execute({ url, method: 'GET' });
             if (response.status !== 200 || !String(response.data).startsWith('data:image/png')) {
@@ -327,7 +331,7 @@
             document.body.removeChild(link);
         } catch (error) {
             console.error('Error downloading image:', error);
-            new Noty({ type: 'error', text: escapeTag(`Failed to download image. ${url}`) }).show();
+            toast.error(`Failed to download image. ${url}`);
         } finally {
             toast.dismiss(msg);
         }

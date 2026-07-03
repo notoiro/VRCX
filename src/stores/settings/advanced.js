@@ -3,18 +3,18 @@ import { defineStore } from 'pinia';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
-import { AppDebug } from '../../service/appConfig';
-import { database } from '../../service/database';
+import { logWebRequest } from '../../services/appConfig';
+import { database } from '../../services/database';
 import { languageCodes } from '../../localization';
 import { useGameStore } from '../game';
 import { useModalStore } from '../modal';
 import { useUpdateLoopStore } from '../updateLoop';
 import { useVRCXUpdaterStore } from '../vrcxUpdater';
 import { useVrcxStore } from '../vrcx';
-import { watchState } from '../../service/watchState';
+import { watchState } from '../../services/watchState';
 
-import configRepository from '../../service/config';
-import webApiService from '../../service/webapi';
+import configRepository from '../../services/config';
+import webApiService from '../../services/webapi';
 
 export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
     const gameStore = useGameStore();
@@ -60,6 +60,8 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
     const showConfirmationOnSwitchAvatar = ref(false);
     const gameLogDisabled = ref(false);
     const sqliteTableSizes = ref({});
+    const avatarAutoCleanup = ref('Off');
+    const purgeInProgress = ref(false);
     const ugcFolderPath = ref('');
     const autoDeleteOldPrints = ref(false);
     const notificationOpacity = ref(100);
@@ -109,6 +111,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             progressPieFilterConfig,
             showConfirmationOnSwitchAvatarConfig,
             gameLogDisabledConfig,
+            avatarAutoCleanupConfig,
             ugcFolderPathConfig,
             autoDeleteOldPrintsConfig,
             notificationOpacityConfig,
@@ -157,6 +160,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
                 false
             ),
             configRepository.getBool('VRCX_gameLogDisabled', false),
+            configRepository.getString('VRCX_avatarAutoCleanup', 'Off'),
             configRepository.getString('VRCX_userGeneratedContentPath', ''),
             configRepository.getBool('VRCX_autoDeleteOldPrints', false),
             configRepository.getFloat('VRCX_notificationOpacity', 100),
@@ -203,6 +207,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
         showConfirmationOnSwitchAvatar.value =
             showConfirmationOnSwitchAvatarConfig;
         gameLogDisabled.value = gameLogDisabledConfig;
+        avatarAutoCleanup.value = avatarAutoCleanupConfig;
         ugcFolderPath.value = ugcFolderPathConfig;
         autoDeleteOldPrints.value = autoDeleteOldPrintsConfig;
         notificationOpacity.value = notificationOpacityConfig;
@@ -230,6 +235,13 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
      */
     function setEnablePrimaryPasswordConfigRepository(value) {
         configRepository.setBool('enablePrimaryPassword', value);
+    }
+
+    /**
+     * @param {boolean} value
+     */
+    function setEnablePrimaryPassword(value) {
+        enablePrimaryPassword.value = value;
     }
     function setRelaunchVRChatAfterCrash() {
         relaunchVRChatAfterCrash.value = !relaunchVRChatAfterCrash.value;
@@ -392,6 +404,100 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             translationApiPrompt.value
         );
     }
+
+    async function fetchAvailableModels(overrides = {}) {
+        const baseURL = overrides.endpoint || translationApiEndpoint.value;
+
+        if (!baseURL) {
+            toast.warning('Translation endpoint not configured');
+            return [];
+        }
+
+        let modelsURL = '';
+        try {
+            const url = new URL(baseURL);
+            const basePath = url.pathname.replace(/\/+$/, '');
+
+            if (basePath.endsWith('/chat/completions')) {
+                url.pathname = basePath.replace(
+                    /\/chat\/completions$/,
+                    '/models'
+                );
+            } else if (basePath.endsWith('/models')) {
+                url.pathname = basePath;
+            } else {
+                url.pathname = `${basePath}/models`;
+            }
+
+            url.search = '';
+            url.hash = '';
+            modelsURL = url.toString();
+        } catch {
+            const normalizedBaseURL = baseURL.endsWith('/')
+                ? baseURL.slice(0, -1)
+                : baseURL;
+
+            if (normalizedBaseURL.includes('/chat/completions')) {
+                modelsURL = normalizedBaseURL.replace(
+                    /\/chat\/completions$/,
+                    '/models'
+                );
+            } else if (normalizedBaseURL.endsWith('/models')) {
+                modelsURL = normalizedBaseURL;
+            } else {
+                modelsURL = `${normalizedBaseURL}/models`;
+            }
+        }
+
+        const headers = {};
+        const keyToUse = overrides.key ?? translationApiKey.value;
+        if (keyToUse) {
+            headers.Authorization = `Bearer ${keyToUse}`;
+        }
+
+        try {
+            const response = await webApiService.execute({
+                url: modelsURL,
+                method: 'GET',
+                headers
+            });
+
+            if (response.status !== 200) {
+                throw new Error(
+                    `Failed to fetch models: ${response.status} - ${response.data}`
+                );
+            }
+
+            const data = JSON.parse(response.data);
+            logWebRequest(
+                '[EXTERNAL GET]',
+                modelsURL,
+                `(${response.status})`,
+                data
+            );
+
+            if (data.data && Array.isArray(data.data)) {
+                return data.data
+                    .map((model) => model.id)
+                    .filter((id) => id && typeof id === 'string')
+                    .sort();
+            }
+
+            if (Array.isArray(data)) {
+                return data
+                    .map((model) => model.id || model.name)
+                    .filter((id) => id && typeof id === 'string')
+                    .sort();
+            }
+
+            throw new Error('Unexpected API response format');
+        } catch (error) {
+            console.error('Failed to fetch models:', error);
+            toast.error(`Failed to fetch models: ${error.message}`);
+            return [];
+        }
+    }
+
     function setBioLanguage(language) {
         bioLanguage.value = language;
         configRepository.setString('VRCX_bioLanguage', language);
@@ -421,6 +527,98 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             'VRCX_gameLogDisabled',
             gameLogDisabled.value
         );
+    }
+
+    async function setAvatarAutoCleanup(value) {
+        avatarAutoCleanup.value = value;
+        await configRepository.setString('VRCX_avatarAutoCleanup', value);
+    }
+
+    /**
+     * @param {number|null} days - Number of days to keep. Null means delete all.
+     */
+    async function purgeAvatarFeedData(days) {
+        let cutoffDate = null;
+        if (days !== null) {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - days);
+            cutoffDate = cutoff.toJSON();
+        }
+
+        purgeInProgress.value = true;
+        const msgBox = toast.warning(
+            t(
+                'view.settings.advanced.advanced.database_cleanup.purge_in_progress'
+            ),
+            { duration: Infinity }
+        );
+
+        try {
+            await database.purgeAvatarFeedData(cutoffDate);
+            await database.vacuum();
+            toast.dismiss(msgBox);
+            toast.success(
+                t(
+                    'view.settings.advanced.advanced.database_cleanup.purge_complete'
+                )
+            );
+            // Brief delay before restart to show success message
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            VRCXUpdaterStore.restartVRCX(false);
+        } catch (err) {
+            console.error(err);
+            toast.dismiss(msgBox);
+            toast.error(
+                t(
+                    'view.settings.advanced.advanced.database_cleanup.purge_failed',
+                    { error: err }
+                )
+            );
+        } finally {
+            purgeInProgress.value = false;
+        }
+    }
+
+    /**
+     * Run auto-cleanup on startup if configured and enough time has passed.
+     * Reads config directly from configRepository to avoid race condition
+     * with initAdvancedSettings not having completed yet.
+     * @param {string} userId - Current user ID for per-user cleanup tracking.
+     */
+    async function runAvatarAutoCleanup(userId) {
+        const cleanupSetting = await configRepository.getString(
+            'VRCX_avatarAutoCleanup',
+            'Off'
+        );
+        if (cleanupSetting === 'Off') return;
+
+        const configKey = `VRCX_lastAvatarCleanupDate_${userId}`;
+        const lastCleanupStr = await configRepository.getString(configKey, '');
+        const now = new Date();
+
+        if (lastCleanupStr) {
+            const lastCleanup = new Date(lastCleanupStr);
+            const daysSinceLastCleanup =
+                (now - lastCleanup) / (1000 * 60 * 60 * 24);
+            if (daysSinceLastCleanup < 7) return;
+        }
+
+        const days = parseInt(cleanupSetting, 10);
+        if (isNaN(days) || days <= 0) return;
+
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffDate = cutoff.toJSON();
+
+        try {
+            await database.purgeAvatarFeedData(cutoffDate);
+            await configRepository.setString(configKey, now.toJSON());
+            console.log(
+                `Auto-cleaned avatar feed data older than ${days} days`
+            );
+        } catch (err) {
+            console.error('Avatar auto-cleanup failed:', err);
+        }
     }
 
     async function setSaveInstanceEmoji() {
@@ -594,19 +792,18 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             apiKey = youTubeApiKey.value;
         }
         try {
+            const url = `https://www.googleapis.com/youtube/v3/videos?id=${encodeURIComponent(
+                videoId
+            )}&part=snippet,contentDetails&key=${apiKey}`;
             const response = await webApiService.execute({
-                url: `https://www.googleapis.com/youtube/v3/videos?id=${encodeURIComponent(
-                    videoId
-                )}&part=snippet,contentDetails&key=${apiKey}`,
+                url,
                 method: 'GET',
                 headers: {
                     Referer: 'https://vrcx.app'
                 }
             });
             const json = JSON.parse(response.data);
-            if (AppDebug.debugWebRequests) {
-                console.log(json, response);
-            }
+            logWebRequest('[EXTERNAL GET]', url, `(${response.status})`, json);
             if (response.status === 200) {
                 data = json;
             } else {
@@ -634,8 +831,9 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
                 return null;
             }
             try {
+                const url = `https://translation.googleapis.com/language/translate/v2?key=${keyToUse}`;
                 const response = await webApiService.execute({
-                    url: `https://translation.googleapis.com/language/translate/v2?key=${keyToUse}`,
+                    url,
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -653,9 +851,12 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
                     );
                 }
                 const data = JSON.parse(response.data);
-                if (AppDebug.debugWebRequests) {
-                    console.log(data, response);
-                }
+                logWebRequest(
+                    '[EXTERNAL POST]',
+                    url,
+                    `(${response.status})`,
+                    data
+                );
                 return data.data.translations[0].translatedText;
             } catch (err) {
                 toast.error(`Translation failed: ${err.message}`);
@@ -681,7 +882,9 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
 
         const headers = {
             'Content-Type': 'application/json',
-            Referer: 'https://vrcx.app'
+            Referer: 'https://vrcx.app',
+            'HTTP-Referer': 'https://vrcx.app',
+            'X-Title': 'VRCX'
         };
         const keyToUse = overrides?.key ?? translationApiKey.value;
         if (keyToUse) {
@@ -715,14 +918,17 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             }
 
             const data = JSON.parse(response.data);
-            if (AppDebug.debugWebRequests) {
-                console.log(data, response);
-            }
+            logWebRequest(
+                '[EXTERNAL POST]',
+                endpoint,
+                `(${response.status})`,
+                data
+            );
 
             const translated = data?.choices?.[0]?.message?.content;
             return typeof translated === 'string' ? translated.trim() : null;
         } catch (err) {
-            toast.error(`Translation failed: ${err.message}`);
+            toast.error(`Translation failed`);
             return null;
         }
     }
@@ -874,7 +1080,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
             .then(async ({ ok, value }) => {
                 if (!ok) return;
                 if (value && !isNaN(parseInt(value, 10))) {
-                    vrcxStore.clearVRCXCacheFrequency = Math.trunc(
+                    vrcxStore.setClearVRCXCacheFrequency(
                         parseInt(value, 10) * 3600 * 2
                     );
                     updateLoopStore.setNextClearVRCXCacheCheck(
@@ -921,6 +1127,8 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
         showConfirmationOnSwitchAvatar,
         gameLogDisabled,
         sqliteTableSizes,
+        avatarAutoCleanup,
+        purgeInProgress,
         ugcFolderPath,
         currentUserInventory,
         autoDeleteOldPrints,
@@ -931,6 +1139,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
         vrcRegistryAskRestore,
         sentryErrorReporting,
 
+        setEnablePrimaryPassword,
         setEnablePrimaryPasswordConfigRepository,
         setBioLanguage,
         setRelaunchVRChatAfterCrash,
@@ -959,6 +1168,9 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
         setProgressPieFilter,
         setShowConfirmationOnSwitchAvatar,
         setGameLogDisabled,
+        setAvatarAutoCleanup,
+        purgeAvatarFeedData,
+        runAvatarAutoCleanup,
         setUGCFolderPath,
         cropPrintsChanged,
         setAutoDeleteOldPrints,
@@ -967,6 +1179,7 @@ export const useAdvancedSettingsStore = defineStore('AdvancedSettings', () => {
         handleSetAppLauncherSettings,
         lookupYouTubeVideo,
         translateText,
+        fetchAvailableModels,
         resetUGCFolder,
         openUGCFolder,
         openUGCFolderSelector,

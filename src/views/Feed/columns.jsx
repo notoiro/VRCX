@@ -5,7 +5,6 @@ import { Button } from '../../components/ui/button';
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger
 } from '../../components/ui/tooltip';
 import {
@@ -16,14 +15,25 @@ import {
     ChevronRight
 } from 'lucide-vue-next';
 import { formatDateFilter, statusClass, timeToText } from '../../shared/utils';
-import { i18n } from '../../plugin';
-import { useUserStore, useGalleryStore } from '../../stores';
+import { i18n } from '../../plugins/i18n';
+import { useGalleryStore, useFriendStore } from '../../stores';
+import { showUserDialog } from '../../coordinators/userCoordinator';
+import UserContextMenu from '../../components/UserContextMenu.vue';
 
 const { t } = i18n.global;
+let friendStore;
+
+const getFriendStore = () => {
+    if (!friendStore) {
+        friendStore = useFriendStore();
+    }
+    return friendStore;
+};
 
 const expandedRow = ({ row }) => {
     const original = row.original;
     const type = original.type;
+    const { showFullscreenImageDialog } = useGalleryStore();
     if (type === 'GPS') {
         return (
             <div class="pl-5 text-sm">
@@ -32,6 +42,7 @@ const expandedRow = ({ row }) => {
                         <Location
                             location={original.previousLocation}
                             class="inline-block"
+                            enableContextMenu
                         />
                         <Badge variant="secondary" class="ml-1 w-fit">
                             {timeToText(original.time)}
@@ -47,6 +58,7 @@ const expandedRow = ({ row }) => {
                         location={original.location}
                         hint={original.worldName}
                         grouphint={original.groupName}
+                        enableContextMenu
                     />
                 ) : null}
             </div>
@@ -60,6 +72,7 @@ const expandedRow = ({ row }) => {
                     location={original.location}
                     hint={original.worldName}
                     grouphint={original.groupName}
+                    enableContextMenu
                 />
                 <Badge variant="secondary" class="ml-1 w-fit">
                     {timeToText(original.time)}
@@ -75,13 +88,13 @@ const expandedRow = ({ row }) => {
                     location={original.location}
                     hint={original.worldName}
                     grouphint={original.groupName}
+                    enableContextMenu
                 />
             </div>
         ) : null;
     }
 
     if (type === 'Avatar') {
-        const { showFullscreenImageDialog } = useGalleryStore();
         return (
             <div class="pl-5 text-sm">
                 <div class="flex items-center">
@@ -212,7 +225,7 @@ export const columns = [
             return (
                 <button
                     type="button"
-                    class="inline-flex h-6 items-center justify-center text-xs text-muted-foreground hover:text-foreground"
+                    class="inline-flex h-6 items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                     onClick={(event) => {
                         event.stopPropagation();
                         row.toggleExpanded();
@@ -226,9 +239,11 @@ export const columns = [
     {
         accessorKey: 'created_at',
         size: 140,
+        meta: { label: () => t('table.feed.date') },
         header: ({ column }) => (
             <Button
                 variant="ghost"
+                class="pl-0!"
                 onClick={() =>
                     column.toggleSorting(column.getIsSorted() === 'asc')
                 }
@@ -243,16 +258,14 @@ export const columns = [
             const longText = formatDateFilter(createdAt, 'long');
 
             return (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <span>{shortText}</span>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                            <span>{longText}</span>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span>{shortText}</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                        <span>{longText}</span>
+                    </TooltipContent>
+                </Tooltip>
             );
         }
     },
@@ -260,6 +273,7 @@ export const columns = [
         accessorKey: 'type',
         size: 130,
         header: () => t('table.feed.type'),
+        meta: { label: () => t('table.feed.type') },
         cell: ({ row }) => {
             const type = row.getValue('type');
             return (
@@ -275,16 +289,23 @@ export const columns = [
         accessorKey: 'displayName',
         size: 190,
         header: () => t('table.feed.user'),
+        meta: { label: () => t('table.feed.user') },
         cell: ({ row }) => {
-            const { showUserDialog } = useUserStore();
             const original = row.original;
+            const friend = getFriendStore().friends.get(original.userId);
             return (
-                <span
-                    class="cursor-pointer pr-2.5 cursor-pointer"
-                    onClick={() => showUserDialog(original.userId)}
+                <UserContextMenu
+                    userId={original.userId}
+                    state={friend?.state ?? ''}
+                    location={friend?.ref?.location ?? ''}
                 >
-                    {original.displayName}
-                </span>
+                    <span
+                        class="cursor-pointer pr-2.5"
+                        onClick={() => showUserDialog(original.userId)}
+                    >
+                        {original.displayName}
+                    </span>
+                </UserContextMenu>
             );
         }
     },
@@ -294,7 +315,8 @@ export const columns = [
         enableSorting: false,
         minSize: 100,
         meta: {
-            stretch: true
+            stretch: true,
+            label: () => t('table.feed.detail')
         },
         cell: ({ row }) => {
             const original = row.original;
@@ -306,6 +328,7 @@ export const columns = [
                             location={original.location}
                             hint={original.worldName}
                             grouphint={original.groupName}
+                            enableContextMenu
                             disableTooltip
                         />
                     </div>
@@ -319,6 +342,7 @@ export const columns = [
                             location={original.location}
                             hint={original.worldName}
                             grouphint={original.groupName}
+                            enableContextMenu
                             disableTooltip
                         />
                     </div>
@@ -384,9 +408,9 @@ export const columns = [
 
             if (type === 'Bio') {
                 return (
-                    <div class="block w-full min-w-0 truncate">
+                    <span class="block w-full min-w-0 truncate">
                         {original.bio}
-                    </div>
+                    </span>
                 );
             }
 
@@ -413,7 +437,7 @@ function formatDifference(
     markerDeletion = '<span class="x-text-removed">{{text}}</span>'
 ) {
     [oldString, newString] = [oldString, newString].map((s) =>
-        s
+        String(s ?? '')
             .replaceAll(/&/g, '&amp;')
             .replaceAll(/</g, '&lt;')
             .replaceAll(/>/g, '&gt;')

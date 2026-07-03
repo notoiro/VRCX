@@ -1,16 +1,16 @@
 <template>
     <Dialog v-model:open="isVisible">
-        <DialogContent>
+        <DialogContent class="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>{{ t('dialog.friend_import.header') }}</DialogTitle>
             </DialogHeader>
             <div style="display: flex; align-items: center; justify-content: space-between">
-                <div style="font-size: 12px">{{ t('dialog.friend_import.description') }}</div>
+                <div class="text-xs">{{ t('dialog.friend_import.description') }}</div>
                 <div style="display: flex; align-items: center">
                     <div v-if="friendImportDialog.progress">
                         {{ t('dialog.friend_import.process_progress') }} {{ friendImportDialog.progress }} /
                         {{ friendImportDialog.progressTotal }}
-                        <Loader2 style="margin: 0 5px" />
+                        <Spinner class="inline-block ml-1 mr-1" />
                     </div>
                     <Button v-if="friendImportDialog.loading" size="sm" variant="secondary" @click="cancelFriendImport">
                         {{ t('dialog.friend_import.cancel') }}
@@ -20,32 +20,46 @@
                     </Button>
                 </div>
             </div>
-            <InputGroupTextareaField
-                v-model="friendImportDialog.input"
-                :rows="10"
-                style="margin-top: 10px"
-                input-class="resize-none" />
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px">
-                <div>
-                    <Select
-                        :model-value="friendImportFavoriteGroupSelection"
-                        @update:modelValue="handleFriendImportGroupSelect">
-                        <SelectTrigger size="sm">
-                            <SelectValue :placeholder="t('dialog.friend_import.select_group_placeholder')" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem
-                                    v-for="groupAPI in favoriteFriendGroups"
-                                    :key="groupAPI.name"
-                                    :value="groupAPI.name"
-                                    :disabled="groupAPI.count >= groupAPI.capacity">
-                                    {{ groupAPI.displayName }} ({{ groupAPI.count }}/{{ groupAPI.capacity }})
-                                </SelectItem>
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                    <span v-if="friendImportDialog.friendImportFavoriteGroup" style="margin-left: 5px">
+            <InputGroupTextareaField v-model="friendImportDialog.input" :rows="10" input-class="resize-none mt-2" />
+            <div>
+                <div class="mb-2">
+                    <div class="flex items-center gap-2">
+                        <Select
+                            :model-value="friendImportFavoriteGroupSelection"
+                            @update:modelValue="handleFriendImportGroupSelect">
+                            <SelectTrigger size="sm">
+                                <SelectValue :placeholder="t('dialog.friend_import.select_group_placeholder')" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem
+                                        v-for="groupAPI in favoriteFriendGroups"
+                                        :key="groupAPI.name"
+                                        :value="groupAPI.name"
+                                        :disabled="groupAPI.count >= groupAPI.capacity">
+                                        {{ groupAPI.displayName }} ({{ groupAPI.count }}/{{ groupAPI.capacity }})
+                                    </SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            class="ml-2"
+                            :model-value="friendImportLocalFavoriteGroupSelection"
+                            @update:modelValue="handleFriendImportLocalGroupSelect">
+                            <SelectTrigger size="sm">
+                                <SelectValue :placeholder="t('dialog.world_import.select_local_group_placeholder')" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem v-for="group in localFriendFavoriteGroups" :key="group" :value="group">
+                                        {{ group }} ({{ localFriendFavGroupLength(group) }})
+                                    </SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <span class="ml-1.5" v-if="friendImportDialog.friendImportFavoriteGroup">
                         {{ friendImportTable.data.length }} /
                         {{
                             friendImportDialog.friendImportFavoriteGroup.capacity -
@@ -64,14 +78,18 @@
                     </Button>
                     <Button
                         size="sm"
-                        :disabled="friendImportTable.data.length === 0 || !friendImportDialog.friendImportFavoriteGroup"
+                        :disabled="
+                            friendImportTable.data.length === 0 ||
+                            (!friendImportDialog.friendImportFavoriteGroup &&
+                                !friendImportDialog.friendImportLocalFavoriteGroup)
+                        "
                         @click="importFriendImportTable">
                         {{ t('dialog.friend_import.import') }}
                     </Button>
                 </div>
             </div>
-            <span v-if="friendImportDialog.importProgress" style="margin: 10px">
-                <Loader2 style="margin-right: 5px" />
+            <span class="m-2" v-if="friendImportDialog.importProgress">
+                <Spinner class="inline-block ml-2 mr-2" />
                 {{ t('dialog.friend_import.import_progress') }} {{ friendImportDialog.importProgress }}/{{
                     friendImportDialog.importProgressTotal
                 }}
@@ -81,8 +99,8 @@
                 <Button size="sm" variant="secondary" @click="friendImportDialog.errors = ''">
                     {{ t('dialog.friend_import.clear_errors') }}
                 </Button>
-                <h2 style="font-weight: bold; margin: 5px 0">{{ t('dialog.friend_import.errors') }}</h2>
-                <pre style="white-space: pre-wrap; font-size: 12px" v-text="friendImportDialog.errors"></pre>
+                <h2 class="my-1.5 mx-0" style="font-weight: bold">{{ t('dialog.friend_import.errors') }}</h2>
+                <pre class="whitespace-pre-wrap text-xs" v-text="friendImportDialog.errors"></pre>
             </template>
             <DataTableLayout
                 class="min-w-0 w-full"
@@ -90,7 +108,7 @@
                 :loading="friendImportDialog.loading"
                 :table-style="tableStyle"
                 :show-pagination="false"
-                style="margin-top: 10px" />
+                style="margin-top: 8px" />
         </DialogContent>
     </Dialog>
 </template>
@@ -102,26 +120,29 @@
     import { Button } from '@/components/ui/button';
     import { DataTableLayout } from '@/components/ui/data-table';
     import { InputGroupTextareaField } from '@/components/ui/input-group';
-    import { Loader2 } from 'lucide-vue-next';
+    import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import { removeFromArray, userImage, userImageFull } from '../../../shared/utils';
+    import { removeFromArray } from '../../../shared/utils';
+    import { useUserDisplay } from '../../../composables/useUserDisplay';
     import { useFavoriteStore, useGalleryStore, useUserStore } from '../../../stores';
+    import { addLocalFriendFavorite } from '../../../coordinators/favoriteCoordinator';
     import { favoriteRequest, userRequest } from '../../../api';
     import { createColumns } from './friendImportColumns.jsx';
     import { useVrcxVueTable } from '../../../lib/table/useVrcxVueTable';
+    import { showUserDialog } from '../../../coordinators/userCoordinator';
 
+    const { userImage, userImageFull } = useUserDisplay();
     const { t } = useI18n();
 
     const emit = defineEmits(['update:friendImportDialogInput']);
 
-    const { showUserDialog } = useUserStore();
-    const { favoriteFriendGroups, friendImportDialogInput, friendImportDialogVisible } =
+    const { favoriteFriendGroups, friendImportDialogInput, friendImportDialogVisible, localFriendFavoriteGroups } =
         storeToRefs(useFavoriteStore());
     const { showFullscreenImageDialog } = useGalleryStore();
-    const { getCachedFavoritesByObjectId } = useFavoriteStore();
+    const { getCachedFavoritesByObjectId, localFriendFavGroupLength } = useFavoriteStore();
 
     const friendImportDialog = ref({
         loading: false,
@@ -131,11 +152,13 @@
         userIdList: new Set(),
         errors: '',
         friendImportFavoriteGroup: null,
+        friendImportLocalFavoriteGroup: null,
         importProgress: 0,
         importProgressTotal: 0
     });
 
     const friendImportFavoriteGroupSelection = ref('');
+    const friendImportLocalFavoriteGroupSelection = ref('');
 
     const friendImportTable = ref({
         data: [],
@@ -160,7 +183,9 @@
 
     const { table } = useVrcxVueTable({
         persistKey: 'friendImportDialog',
-        data: rows,
+        get data() {
+            return rows.value;
+        },
         columns: columns.value,
         getRowId: (row) => String(row?.id ?? ''),
         enablePagination: false,
@@ -201,6 +226,11 @@
         }
     }
 
+    function handleFriendImportLocalGroupSelect(value) {
+        friendImportLocalFavoriteGroupSelection.value = value;
+        selectFriendImportLocalGroup(value || null);
+    }
+
     function cancelFriendImport() {
         friendImportDialog.value.loading = false;
     }
@@ -213,13 +243,23 @@
         friendImportDialog.value.userIdList = new Set();
     }
     function selectFriendImportGroup(group) {
+        friendImportDialog.value.friendImportLocalFavoriteGroup = null;
         friendImportDialog.value.friendImportFavoriteGroup = group;
         friendImportFavoriteGroupSelection.value = group?.name ?? '';
+        friendImportLocalFavoriteGroupSelection.value = '';
     }
+
+    function selectFriendImportLocalGroup(group) {
+        friendImportDialog.value.friendImportFavoriteGroup = null;
+        friendImportDialog.value.friendImportLocalFavoriteGroup = group;
+        friendImportFavoriteGroupSelection.value = '';
+        friendImportLocalFavoriteGroupSelection.value = group ?? '';
+    }
+
     async function importFriendImportTable() {
         const D = friendImportDialog.value;
         D.loading = true;
-        if (!D.friendImportFavoriteGroup) {
+        if (!D.friendImportFavoriteGroup && !D.friendImportLocalFavoriteGroup) {
             return;
         }
         const data = [...friendImportTable.value.data].reverse();
@@ -231,10 +271,14 @@
                     break;
                 }
                 ref = data[i];
-                if (getCachedFavoritesByObjectId(ref.id)) {
-                    throw new Error('Friend is already in favorites');
+                if (D.friendImportFavoriteGroup) {
+                    if (getCachedFavoritesByObjectId(ref.id)) {
+                        throw new Error('Friend is already in favorites');
+                    }
+                    await addFavoriteUser(ref, D.friendImportFavoriteGroup, false);
+                } else if (D.friendImportLocalFavoriteGroup) {
+                    addLocalFriendFavorite(ref.id, D.friendImportLocalFavoriteGroup);
                 }
-                await addFavoriteUser(ref, D.friendImportFavoriteGroup, false);
                 removeFromArray(friendImportTable.value.data, ref);
                 D.userIdList.delete(ref.id);
                 D.importProgress++;
@@ -295,11 +339,10 @@
                 }
             }
             D.progress++;
-            if (D.progress === userIdList.size) {
-                D.progress = 0;
-            }
         }
         D.loading = false;
+        D.progress = 0;
+        D.progressTotal = 0;
     }
     function resetFriendImport() {
         friendImportDialog.value.input = '';

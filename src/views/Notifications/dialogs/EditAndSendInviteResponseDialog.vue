@@ -6,7 +6,7 @@
             <DialogHeader>
                 <DialogTitle>{{ t('dialog.edit_send_invite_response_message.header') }}</DialogTitle>
             </DialogHeader>
-            <div style="font-size: 12px">
+            <div class="text-xs">
                 <span>{{ t('dialog.edit_send_invite_response_message.description') }}</span>
             </div>
             <InputGroupTextareaField
@@ -39,7 +39,7 @@
     import { useI18n } from 'vue-i18n';
 
     import { inviteMessagesRequest, notificationRequest } from '../../../api';
-    import { useGalleryStore } from '../../../stores';
+    import { useGalleryStore, useNotificationStore } from '../../../stores';
 
     const { t } = useI18n();
     const galleryStore = useGalleryStore();
@@ -75,7 +75,8 @@
             await inviteMessagesRequest
                 .editInviteMessage(params, messageType, slot)
                 .catch((err) => {
-                    throw err;
+                    console.error('Invite response message update failed', err);
+                    toast.error(t('message.error'));
                 })
                 .then((args) => {
                     if (args.json[slot].message === I.messageSlot.message) {
@@ -83,7 +84,7 @@
                         toast.error(errorMessage);
                         throw new Error(errorMessage);
                     } else {
-                        toast('Invite message updated');
+                        toast(t('message.invite.message_updated'));
                     }
                     return args;
                 });
@@ -96,13 +97,18 @@
             notificationRequest
                 .sendInviteResponsePhoto(params, I.invite.id)
                 .catch((err) => {
-                    throw err;
+                    console.error('Invite response photo failed', err);
+                    toast.error(t('message.error'));
                 })
                 .then((args) => {
-                    notificationRequest.hideNotification({
-                        notificationId: I.invite.id
-                    });
-                    toast.success('Invite response message sent');
+                    notificationRequest
+                        .hideNotification({
+                            notificationId: I.invite.id
+                        })
+                        .then(() => {
+                            useNotificationStore().handleNotificationHide(I.invite.id);
+                        });
+                    toast.success(t('message.invite.response_sent'));
                     return args;
                 })
                 .finally(() => {
@@ -112,13 +118,18 @@
             notificationRequest
                 .sendInviteResponse(params, I.invite.id)
                 .catch((err) => {
-                    throw err;
+                    console.error('Invite response failed', err);
+                    toast.error(t('message.error'));
                 })
                 .then((args) => {
-                    notificationRequest.hideNotification({
-                        notificationId: I.invite.id
-                    });
-                    toast.success('Invite response message sent');
+                    notificationRequest
+                        .hideNotification({
+                            notificationId: I.invite.id
+                        })
+                        .then(() => {
+                            useNotificationStore().handleNotificationHide(I.invite.id);
+                        });
+                    toast.success(t('message.invite.response_sent'));
                     return args;
                 })
                 .finally(() => {

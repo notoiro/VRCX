@@ -2,7 +2,7 @@ import { nextTick, reactive, ref } from 'vue';
 
 import dayjs from 'dayjs';
 
-import { database } from '../../../service/database';
+import { database } from '../../../services/database';
 import { getWorldName } from '../../../shared/utils';
 
 export function useInstanceActivityData() {
@@ -63,7 +63,8 @@ export function useInstanceActivityData() {
             isFriend:
                 item.user_id === currentUser.value.id
                     ? null
-                    : friends.value.has(item.user_id),
+                    : friends.value.has(item.user_id) ||
+                      localFavoriteFriends.value.has(item.user_id),
             isFavorite:
                 item.user_id === currentUser.value.id
                     ? null

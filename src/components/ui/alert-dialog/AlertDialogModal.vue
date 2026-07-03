@@ -14,8 +14,16 @@
 
     const modalStore = useModalStore();
 
-    const { alertOpen, alertMode, alertTitle, alertDescription, alertOkText, alertCancelText, alertDismissible } =
-        storeToRefs(modalStore);
+    const {
+        alertOpen,
+        alertMode,
+        alertTitle,
+        alertDescription,
+        alertOkText,
+        alertCancelText,
+        alertDismissible,
+        alertDestructive
+    } = storeToRefs(modalStore);
 
     function onEscapeKeyDown(event) {
         if (!alertDismissible.value) {
@@ -60,7 +68,7 @@
                     {{ alertCancelText }}
                 </AlertDialogCancel>
 
-                <AlertDialogAction @click="modalStore.handleOk">
+                <AlertDialogAction :variant="alertDestructive ? 'destructive' : undefined" @click="modalStore.handleOk">
                     {{ alertOkText }}
                 </AlertDialogAction>
             </AlertDialogFooter>

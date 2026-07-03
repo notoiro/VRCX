@@ -4,10 +4,10 @@
             <TooltipWrapper
                 v-if="userDialog.isFavorite"
                 side="top"
-                :content="t('dialog.user.actions.unfavorite_tooltip')">
+                :content="t('dialog.user.actions.favorites_tooltip')">
                 <Button class="rounded-full" size="icon-lg" @click="userDialogCommand('Add Favorite')"><Star /></Button>
             </TooltipWrapper>
-            <TooltipWrapper v-else side="top" :content="t('dialog.user.actions.favorite_tooltip')">
+            <TooltipWrapper v-else side="top" :content="t('dialog.user.actions.favorites_tooltip')">
                 <Button class="rounded-full" size="icon-lg" variant="outline" @click="userDialogCommand('Add Favorite')"
                     ><Star
                 /></Button>
@@ -16,11 +16,12 @@
         <DropdownMenu>
             <DropdownMenuTrigger as-child>
                 <div class="ml-2">
-                    <Button :variant="hasRisk ? 'destructive' : 'outline'" size="icon-lg" class="rounded-full">
+                    <Button
+                        :variant="hasRisk ? 'destructive' : 'outline'"
+                        size="icon-lg"
+                        class="rounded-full"
+                        :class="{ 'dot-indicator': hasRequest }">
                         <MoreHorizontal />
-                        <span
-                            class="absolute right-6 top-15.5 h-2.5 w-2.5 rounded-full ring-2 ring-background"
-                            :class="dotClass" />
                     </Button>
                 </div>
             </DropdownMenuTrigger>
@@ -66,10 +67,16 @@
                         <DropdownMenuItem @click="onCommand('Request Invite')">
                             <Mail class="size-4" />
                             {{ t('dialog.user.actions.request_invite') }}
+                            <DropdownMenuShortcut v-if="isActionRecent(userDialog.id, 'Request Invite')">
+                                <Clock class="size-3.5 text-muted-foreground" />
+                            </DropdownMenuShortcut>
                         </DropdownMenuItem>
                         <DropdownMenuItem @click="onCommand('Request Invite Message')">
                             <Mail class="size-4" />
                             {{ t('dialog.user.actions.request_invite_with_message') }}
+                            <DropdownMenuShortcut v-if="isActionRecent(userDialog.id, 'Request Invite Message')">
+                                <Clock class="size-3.5 text-muted-foreground" />
+                            </DropdownMenuShortcut>
                         </DropdownMenuItem>
                         <template v-if="isGameRunning">
                             <DropdownMenuItem
@@ -77,12 +84,18 @@
                                 @click="onCommand('Invite')">
                                 <MessageSquare class="size-4" />
                                 {{ t('dialog.user.actions.invite') }}
+                                <DropdownMenuShortcut v-if="isActionRecent(userDialog.id, 'Invite')">
+                                    <Clock class="size-3.5 text-muted-foreground" />
+                                </DropdownMenuShortcut>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 :disabled="!checkCanInvite(lastLocation.location)"
                                 @click="onCommand('Invite Message')">
                                 <MessageSquare class="size-4" />
                                 {{ t('dialog.user.actions.invite_with_message') }}
+                                <DropdownMenuShortcut v-if="isActionRecent(userDialog.id, 'Invite Message')">
+                                    <Clock class="size-3.5 text-muted-foreground" />
+                                </DropdownMenuShortcut>
                             </DropdownMenuItem>
                         </template>
                         <DropdownMenuItem :disabled="!currentUser.isBoopingEnabled" @click="onCommand('Send Boop')">
@@ -109,6 +122,9 @@
                     <DropdownMenuItem v-else @click="onCommand('Send Friend Request')">
                         <Plus class="size-4" />
                         {{ t('dialog.user.actions.send_friend_request') }}
+                        <DropdownMenuShortcut v-if="isActionRecent(userDialog.id, 'Send Friend Request')">
+                            <Clock class="size-3.5 text-muted-foreground" />
+                        </DropdownMenuShortcut>
                     </DropdownMenuItem>
                     <DropdownMenuItem @click="onCommand('Invite To Group')">
                         <MessageSquare class="size-4" />
@@ -217,6 +233,7 @@
     import {
         Check,
         CheckCircle,
+        Clock,
         Flag,
         LineChart,
         Mail,
@@ -247,10 +264,12 @@
         DropdownMenuContent,
         DropdownMenuItem,
         DropdownMenuSeparator,
+        DropdownMenuShortcut,
         DropdownMenuTrigger
     } from '../../ui/dropdown-menu';
     import { useGameStore, useLocationStore, useUserStore } from '../../../stores';
-    import { checkCanInvite } from '../../../shared/utils';
+    import { useInviteChecks } from '../../../composables/useInviteChecks';
+    import { isActionRecent } from '../../../composables/useRecentActions';
 
     const props = defineProps({
         userDialogCommand: {
@@ -264,6 +283,7 @@
     const { userDialog, currentUser } = storeToRefs(useUserStore());
     const { isGameRunning } = storeToRefs(useGameStore());
     const { lastLocation } = storeToRefs(useLocationStore());
+    const { checkCanInvite } = useInviteChecks();
 
     const hasRequest = computed(() => userDialog.value.incomingRequest || userDialog.value.outgoingRequest);
     const hasRisk = computed(
@@ -275,12 +295,19 @@
             userDialog.value.isHideAvatar
     );
 
-    const dotClass = computed(() => {
-        if (hasRequest.value) return 'bg-emerald-500';
-        return 'opacity-0';
-    });
-
     function onCommand(command) {
         props.userDialogCommand(command);
     }
 </script>
+<style scoped>
+    .dot-indicator::after {
+        margin-left: 30px;
+        margin-bottom: 30px;
+        content: '';
+        width: 10px;
+        height: 10px;
+        background-color: var(--color-emerald-500);
+        border-radius: 50%;
+        position: absolute;
+    }
+</style>

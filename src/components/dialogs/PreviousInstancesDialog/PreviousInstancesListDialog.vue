@@ -12,10 +12,11 @@
             :page-sizes="pageSizes"
             :total-items="totalItems"
             :on-page-size-change="handlePageSizeChange"
-            :on-page-change="handlePageChange">
+            :on-page-change="handlePageChange"
+            :on-sort-change="handleSortChange">
             <template #toolbar>
                 <div style="display: flex; align-items: center; justify-content: space-between">
-                    <span style="font-size: 14px" v-text="headerText"></span>
+                    <span class="text-sm" v-text="headerText"></span>
                     <InputGroupField
                         v-model="search"
                         :placeholder="t('dialog.previous_instances.search_placeholder')"
@@ -55,7 +56,7 @@
     } from '../../../shared/utils';
     import { DataTableLayout } from '../../ui/data-table';
     import { createPreviousInstancesColumns } from './previousInstancesColumns.jsx';
-    import { database } from '../../../service/database';
+    import { database } from '../../../services/database';
     import { useVrcxVueTable } from '../../../lib/table/useVrcxVueTable';
 
     const props = defineProps({
@@ -87,6 +88,7 @@
             return state;
         }
         previousInstancesListState.value[props.variant] = {
+            sortBy: [{ id: 'created_at', desc: true }],
             search: '',
             pageSize: 10,
             pageIndex: 0
@@ -103,11 +105,17 @@
             getListState().pageSize = value;
         }
     });
-    const tableStyle = { maxHeight: '400px' };
+    const tableStyle = { maxHeight: '100%' };
     const search = computed({
         get: () => getListState().search,
         set: (value) => {
             getListState().search = value;
+        }
+    });
+    const sortBy = computed({
+        get: () => getListState().sortBy,
+        set: (value) => {
+            getListState().sortBy = value;
         }
     });
 
@@ -116,6 +124,12 @@
         if (props.variant === 'user') return state?.userRef?.displayName ?? '';
         if (props.variant === 'world') return state?.worldRef?.name ?? '';
         return state?.groupRef?.name ?? '';
+    });
+
+    const currentId = computed(() => {
+        if (props.variant === 'user') return dialogState.value?.userRef?.id ?? '';
+        if (props.variant === 'world') return dialogState.value?.worldRef?.id ?? '';
+        return dialogState.value?.groupRef?.id ?? '';
     });
 
     const persistKey = computed(() => {
@@ -196,10 +210,12 @@
 
     const { table } = useVrcxVueTable({
         persistKey: persistKey.value,
-        data: displayRows,
+        get data() {
+            return displayRows.value;
+        },
         columns: columns.value,
         getRowId: (row) => `${row?.location ?? ''}:${row?.created_at ?? ''}`,
-        initialSorting: [{ id: 'created_at', desc: true }],
+        initialSorting: sortBy.value,
         initialPagination: {
             pageIndex: pageIndex.value,
             pageSize: pageSize.value
@@ -221,9 +237,7 @@
     );
 
     const totalItems = computed(() => {
-        const length = table.getFilteredRowModel().rows.length;
-        const max = vrcxStore.maxTableSize;
-        return length > max && length < max + 51 ? max : length;
+        return table.getFilteredRowModel().rows.length;
     });
 
     const handlePageSizeChange = (size) => {
@@ -234,19 +248,28 @@
         pageIndex.value = Math.max(0, page - 1);
     };
 
+    const handleSortChange = (sorting) => {
+        sortBy.value = sorting;
+    };
+
     const refreshTable = async () => {
         loading.value = true;
         const array = [];
         try {
+            const D = previousInstancesListDialog.value;
+            if (currentId.value !== D.lastId) {
+                table.setPageIndex(0);
+                pageIndex.value = 0;
+                D.lastId = currentId.value;
+            }
             if (props.variant === 'user') {
-                const data = await database.getPreviousInstancesByUserId(previousInstancesListDialog.value.userRef);
+                const data = await database.getPreviousInstancesByUserId(D.userRef);
                 for (const item of data.values()) {
                     item.$location = parseLocation(item.location);
                     item.timer = item.time > 0 ? timeToText(item.time) : '';
                     array.push(item);
                 }
             } else if (props.variant === 'world') {
-                const D = previousInstancesListDialog.value;
                 const data = await database.getPreviousInstancesByWorldId(D.worldRef);
                 for (const ref of data.values()) {
                     ref.$location = parseLocation(ref.location);
@@ -254,7 +277,6 @@
                     array.push(ref);
                 }
             } else {
-                const D = previousInstancesListDialog.value;
                 const data = await database.getPreviousInstancesByGroupId(D.groupRef.id);
                 for (const ref of data.values()) {
                     ref.$location = parseLocation(ref.location);

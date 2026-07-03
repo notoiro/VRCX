@@ -16,7 +16,7 @@
             </template>
 
             <DataTableLayout
-                style="margin-top: 10px"
+                style="margin-top: 8px"
                 :table="inviteRequestMessageTanstackTable"
                 :loading="false"
                 :show-pagination="false"
@@ -105,22 +105,36 @@
 
     const { table: inviteRequestMessageTanstackTable } = useVrcxVueTable({
         persistKey: 'invite-request-message',
-        data: inviteRequestMessageRows,
+        get data() {
+            return inviteRequestMessageRows.value;
+        },
         columns: inviteRequestMessageColumns,
         getRowId: (row) => String(row?.slot ?? ''),
         enablePagination: false,
         initialSorting: [{ id: 'slot', desc: false }]
     });
 
+    /**
+     *
+     * @param row
+     */
     function handleInviteRequestMessageRowClick(row) {
         showSendInviteConfirmDialog(row?.original);
     }
 
+    /**
+     *
+     * @param row
+     */
     function showSendInviteConfirmDialog(row) {
         emit('update:sendInviteDialog', { ...props.sendInviteDialog, messageSlot: row });
         isSendInviteConfirmDialogVisible.value = true;
     }
 
+    /**
+     *
+     * @param row
+     */
     function showEditAndSendInviteDialog(row) {
         emit('update:sendInviteDialog', { ...props.sendInviteDialog, messageSlot: row });
         editAndSendInviteDialog.value = {
@@ -128,10 +142,16 @@
             visible: true
         };
     }
+    /**
+     *
+     */
     function cancelSendInviteRequest() {
         emit('update:sendInviteRequestDialogVisible', false);
     }
 
+    /**
+     *
+     */
     function closeInviteDialog() {
         cancelSendInviteRequest();
     }

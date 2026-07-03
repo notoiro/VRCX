@@ -1,26 +1,56 @@
 <template>
     <div class="x-login-container">
-        <div style="position: absolute; top: 0; left: 0; margin: 5px">
+        <div class="m-1.5" style="position: absolute; top: 0; left: 0">
+            <LoginSettingsDialog />
             <TooltipWrapper v-if="!noUpdater" side="top" :content="t('view.login.updater')">
-                <Button class="rounded-full mr-2 text-xs" size="icon-sm" variant="ghost" @click="showVRCXUpdateDialog"
-                    ><CircleArrowDown
-                /></Button>
+                <Button class="rounded-full mr-2 text-xs" size="icon-sm" variant="ghost" @click="showVRCXUpdateDialog">
+                    <span class="relative inline-flex items-center justify-center">
+                        <ArrowBigDownDash />
+                        <span
+                            v-if="pendingVRCXUpdate"
+                            class="absolute -top-0.5 -right-1 h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                    </span>
+                </Button>
             </TooltipWrapper>
-            <TooltipWrapper side="top" :content="t('view.login.proxy_settings')">
-                <Button class="rounded-full text-xs" size="icon-sm" variant="ghost" @click="promptProxySettings"
-                    ><Route
-                /></Button>
-            </TooltipWrapper>
+            <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                    <TooltipWrapper side="top" :content="t('view.login.language')">
+                        <Button class="rounded-full text-xs" size="icon-sm" variant="ghost">
+                            <Languages />
+                        </Button>
+                    </TooltipWrapper>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent class="max-h-80 overflow-y-auto text-xs">
+                    <DropdownMenuCheckboxItem
+                        v-for="language in languageCodes"
+                        :key="language"
+                        :model-value="appLanguage === language"
+                        @select="changeAppLanguage(language)">
+                        {{ getLanguageName(language) }}
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
         <div class="x-login">
+            <Alert
+                v-if="vrcStatusStore.hasIssue"
+                :variant="vrcStatusStore.isMajor ? 'destructive' : 'warning'"
+                class="cursor-pointer mb-3 hover:opacity-80 transition-opacity"
+                @click="vrcStatusStore.openStatusPage()">
+                <TriangleAlert class="size-4" />
+                <AlertTitle class="truncate">{{ t('status_bar.servers_issue') }}</AlertTitle>
+                <AlertDescription class="truncate">
+                    {{ vrcStatusStore.statusText }}
+                </AlertDescription>
+            </Alert>
             <div class="x-login-form-container">
                 <div>
-                    <h2 style="font-weight: bold; text-align: center; margin: 0">{{ t('view.login.login') }}</h2>
+                    <h2 class="m-0" style="font-weight: bold; text-align: center">{{ t('view.login.login') }}</h2>
                     <form id="login-form" @submit.prevent="onSubmit">
                         <FieldGroup class="gap-3">
                             <VeeField v-slot="{ field, errors }" name="username">
                                 <Field :data-invalid="!!errors.length">
-                                    <FieldLabel for="login-form-username">
+                                    <FieldLabel for="login-form-username" class="text-foreground">
                                         {{ t('view.login.field.username') }}
                                     </FieldLabel>
                                     <FieldContent>
@@ -31,16 +61,15 @@
                                             name="username"
                                             :placeholder="t('view.login.field.username')"
                                             :aria-invalid="!!errors.length"
-                                            clearable
                                             @update:modelValue="field.onChange"
                                             @blur="field.onBlur" />
                                         <FieldError v-if="errors.length" :errors="errors" />
                                     </FieldContent>
                                 </Field>
                             </VeeField>
-                            <VeeField v-slot="{ field, errors }" name="password">
+                            <VeeField v-slot="{ field, errors, handleChange }" name="password">
                                 <Field :data-invalid="!!errors.length">
-                                    <FieldLabel for="login-form-password">
+                                    <FieldLabel for="login-form-password" class="text-foreground">
                                         {{ t('view.login.field.password') }}
                                     </FieldLabel>
                                     <FieldContent>
@@ -52,7 +81,8 @@
                                             name="password"
                                             :placeholder="t('view.login.field.password')"
                                             :aria-invalid="!!errors.length"
-                                            clearable
+                                            show-password
+                                            @keydown.delete="handleChange('', false)"
                                             @update:modelValue="field.onChange"
                                             @blur="field.onBlur" />
                                         <FieldError v-if="errors.length" :errors="errors" />
@@ -60,57 +90,12 @@
                                 </Field>
                             </VeeField>
                         </FieldGroup>
-                        <label class="inline-flex items-center gap-2 mr-2">
+                        <label class="inline-flex items-center gap-2 mr-2 mt-3 text-sm">
                             <Checkbox v-model="loginForm.saveCredentials" />
                             <span>{{ t('view.login.field.saveCredentials') }}</span>
                         </label>
-                        <label class="inline-flex items-center gap-2" style="margin-top: 10px">
-                            <Checkbox v-model="enableCustomEndpoint" @update:modelValue="handleCustomEndpointToggle" />
-                            <span>{{ t('view.login.field.devEndpoint') }}</span>
-                        </label>
-                        <FieldGroup v-if="enableCustomEndpoint" class="mt-3 gap-3">
-                            <VeeField v-slot="{ field, errors }" name="endpoint">
-                                <Field :data-invalid="!!errors.length">
-                                    <FieldLabel for="login-form-endpoint">
-                                        {{ t('view.login.field.endpoint') }}
-                                    </FieldLabel>
-                                    <FieldContent>
-                                        <InputGroupField
-                                            id="login-form-endpoint"
-                                            :model-value="field.value"
-                                            autocomplete="off"
-                                            name="endpoint"
-                                            :placeholder="AppDebug.endpointDomainVrchat"
-                                            :aria-invalid="!!errors.length"
-                                            clearable
-                                            @update:modelValue="field.onChange"
-                                            @blur="field.onBlur" />
-                                        <FieldError v-if="errors.length" :errors="errors" />
-                                    </FieldContent>
-                                </Field>
-                            </VeeField>
-                            <VeeField v-slot="{ field, errors }" name="websocket">
-                                <Field :data-invalid="!!errors.length">
-                                    <FieldLabel for="login-form-websocket">
-                                        {{ t('view.login.field.websocket') }}
-                                    </FieldLabel>
-                                    <FieldContent>
-                                        <InputGroupField
-                                            id="login-form-websocket"
-                                            :model-value="field.value"
-                                            autocomplete="off"
-                                            name="websocket"
-                                            :placeholder="AppDebug.websocketDomainVrchat"
-                                            :aria-invalid="!!errors.length"
-                                            clearable
-                                            @update:modelValue="field.onChange"
-                                            @blur="field.onBlur" />
-                                        <FieldError v-if="errors.length" :errors="errors" />
-                                    </FieldContent>
-                                </Field>
-                            </VeeField>
-                        </FieldGroup>
-                        <Field class="mt-2">
+
+                        <Field class="mt-4">
                             <Button type="submit" size="lg" style="width: 100%">{{ t('view.login.login') }}</Button>
                         </Field>
                     </form>
@@ -126,40 +111,50 @@
                 <hr v-if="Object.keys(savedCredentials).length !== 0" class="x-vertical-divider" />
 
                 <div v-if="Object.keys(savedCredentials).length !== 0">
-                    <h2 style="font-weight: bold; text-align: center; margin: 0">
+                    <h2 class="m-0" style="font-weight: bold; text-align: center">
                         {{ t('view.login.savedAccounts') }}
                     </h2>
-                    <div class="x-scroll-wrapper" style="margin-top: 10px">
+                    <div class="x-scroll-wrapper mt-2">
                         <div class="x-saved-account-list">
-                            <div
+                            <Item
                                 v-for="user in savedCredentials"
                                 :key="user.user.id"
-                                class="x-friend-item hover:bg-muted rounded-xs"
+                                class="cursor-pointer hover:bg-muted p-2 border-0"
                                 @click="clickSavedLogin(user)">
-                                <div class="avatar">
-                                    <img :src="userImage(user.user)" loading="lazy" />
-                                </div>
-                                <div class="detail">
-                                    <span class="name" v-text="user.user.displayName"></span>
-                                    <span class="block truncate text-xs" v-text="user.user.username"></span>
-                                    <span class="block truncate text-xs" v-text="user.loginParams.endpoint"></span>
-                                </div>
-                                <Button
-                                    class="rounded-full"
-                                    size="icon-sm"
-                                    variant="ghost"
-                                    style="margin-left: 10px"
-                                    @click.stop="clickDeleteSavedLogin(user.user.id)"
-                                    ><Trash2 class="h-3 w-3"
-                                /></Button>
-                            </div>
+                                <ItemMedia variant="image">
+                                    <Avatar class="rounded-full">
+                                        <AvatarImage :src="userImage(user.user)" />
+                                        <AvatarFallback>
+                                            <User class="size-5 text-muted-foreground" />
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </ItemMedia>
+                                <ItemContent class="min-w-0">
+                                    <ItemTitle class="truncate max-w-full">{{ user.user.displayName }}</ItemTitle>
+                                    <ItemDescription class="truncate text-xs!">
+                                        {{ user.user.username }}
+                                    </ItemDescription>
+                                    <ItemDescription v-if="user.loginParams.endpoint" class="truncate text-xs!">
+                                        {{ user.loginParams.endpoint }}
+                                    </ItemDescription>
+                                </ItemContent>
+                                <ItemActions @click.stop>
+                                    <Button
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        class="cursor-pointer rounded-full"
+                                        @click="clickDeleteSavedLogin(user.user.id)"
+                                        ><Trash2 class="text-sm"
+                                    /></Button>
+                                </ItemActions>
+                            </Item>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="x-legal-notice-container">
-                <div style="text-align: center; font-size: 12px">
+                <div class="text-center text-xs">
                     <p>
                         <a class="cursor-pointer" @click="openExternalLink('https://vrchat.com/home/password')">{{
                             t('view.login.forgotPassword')
@@ -185,9 +180,18 @@
 </template>
 
 <script setup>
+    import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
     import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+    import {
+        DropdownMenu,
+        DropdownMenuCheckboxItem,
+        DropdownMenuContent,
+        DropdownMenuTrigger
+    } from '@/components/ui/dropdown-menu';
     import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
-    import { CircleArrowDown, Route, Trash2 } from 'lucide-vue-next';
+    import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+    import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
+    import { ArrowBigDownDash, Languages, Trash2, TriangleAlert, User } from 'lucide-vue-next';
     import { Field as VeeField, useForm } from 'vee-validate';
     import { useRoute, useRouter } from 'vue-router';
     import { Button } from '@/components/ui/button';
@@ -198,18 +202,37 @@
     import { useI18n } from 'vue-i18n';
     import { z } from 'zod';
 
-    import { useAuthStore, useGeneralSettingsStore, useVRCXUpdaterStore } from '../../stores';
-    import { openExternalLink, userImage } from '../../shared/utils';
-    import { AppDebug } from '../../service/appConfig';
-    import { watchState } from '../../service/watchState';
+    import {
+        useAppearanceSettingsStore,
+        useAuthStore,
+        useModalStore,
+        useVrcStatusStore,
+        useVRCXUpdaterStore
+    } from '../../stores';
+    import { getLanguageName, languageCodes, resolveSystemLanguage } from '../../localization';
+    import { tForLocale } from '../../plugins';
+    import { openExternalLink } from '../../shared/utils';
 
+    import configRepository from '../../services/config';
+    import { useUserDisplay } from '../../composables/useUserDisplay';
+    import { watchState } from '../../services/watchState';
+
+    import LoginSettingsDialog from './Dialog/LoginSettingsDialog.vue';
+
+    const { userImage } = useUserDisplay();
     const { showVRCXUpdateDialog } = useVRCXUpdaterStore();
     const router = useRouter();
     const route = useRoute();
-    const { loginForm, enableCustomEndpoint } = storeToRefs(useAuthStore());
-    const { toggleCustomEndpoint, relogin, deleteSavedLogin, login, getAllSavedCredentials } = useAuthStore();
-    const { promptProxySettings } = useGeneralSettingsStore();
-    const { noUpdater } = storeToRefs(useVRCXUpdaterStore());
+    const { loginForm } = storeToRefs(useAuthStore());
+    const { relogin, deleteSavedLogin, login, getAllSavedCredentials } = useAuthStore();
+    const { noUpdater, pendingVRCXUpdate } = storeToRefs(useVRCXUpdaterStore());
+
+    const appearanceSettingsStore = useAppearanceSettingsStore();
+    const { appLanguage } = storeToRefs(appearanceSettingsStore);
+    const { changeAppLanguage } = appearanceSettingsStore;
+    const modalStore = useModalStore();
+
+    const vrcStatusStore = useVrcStatusStore();
 
     const { t } = useI18n();
 
@@ -219,50 +242,50 @@
     const formSchema = toTypedSchema(
         z.object({
             username: z.string().min(1, requiredMessage),
-            password: z.string().min(1, requiredMessage),
-            endpoint: z.string().optional(),
-            websocket: z.string().optional()
+            password: z.string().min(1, requiredMessage)
         })
     );
 
-    const { handleSubmit, resetForm, setValues, values } = useForm({
+    const { handleSubmit, resetForm, values } = useForm({
         validationSchema: formSchema,
         initialValues: {
             username: loginForm.value.username,
-            password: loginForm.value.password,
-            endpoint: loginForm.value.endpoint,
-            websocket: loginForm.value.websocket
+            password: loginForm.value.password
         }
     });
 
+    /**
+     *
+     * @param userId
+     */
     async function clickDeleteSavedLogin(userId) {
         await deleteSavedLogin(userId);
         await updateSavedCredentials();
     }
 
+    /**
+     *
+     * @param user
+     */
     async function clickSavedLogin(user) {
-        await relogin(user);
+        try {
+            await relogin(user);
+        } catch {
+            // relogin already handles user-facing error display (toast)
+        }
         await updateSavedCredentials();
     }
 
     const onSubmit = handleSubmit(async (formValues) => {
         loginForm.value.username = formValues.username ?? '';
         loginForm.value.password = formValues.password ?? '';
-        loginForm.value.endpoint = formValues.endpoint ?? '';
-        loginForm.value.websocket = formValues.websocket ?? '';
         await login();
         await updateSavedCredentials();
     });
 
-    async function handleCustomEndpointToggle() {
-        await toggleCustomEndpoint();
-        setValues({
-            ...values,
-            endpoint: loginForm.value.endpoint,
-            websocket: loginForm.value.websocket
-        });
-    }
-
+    /**
+     *
+     */
     async function updateSavedCredentials() {
         if (watchState.isLoggedIn) {
             return;
@@ -270,6 +293,9 @@
         savedCredentials.value = await getAllSavedCredentials();
     }
 
+    /**
+     *
+     */
     function postLoginRedirect() {
         const redirect = route.query.redirect;
         if (typeof redirect === 'string' && redirect.startsWith('/') && redirect !== '/login') {
@@ -295,18 +321,75 @@
             }
         }
     );
+    let isActive = true;
+    let isLanguagePromptOpen = false;
+
+    async function detectAndPromptLanguage() {
+        try {
+            const savedLanguage = await configRepository.getString('VRCX_appLanguage');
+            if (savedLanguage || !isActive) return;
+
+            const systemLanguage = await AppApi.CurrentLanguage();
+            if (!systemLanguage || !isActive) return;
+
+            const matchedCode = resolveSystemLanguage(systemLanguage, languageCodes);
+
+            if (!matchedCode || matchedCode === 'en') {
+                if (isActive) await changeAppLanguage('en');
+                return;
+            }
+
+            const languageName = getLanguageName(matchedCode);
+            const [promptTitle, promptDescription, promptConfirmText, promptCancelText] = await Promise.all([
+                tForLocale(matchedCode, 'view.login.language_detect.title'),
+                tForLocale(matchedCode, 'view.login.language_detect.description', {
+                    language: languageName
+                }),
+                tForLocale(matchedCode, 'dialog.alertdialog.confirm'),
+                tForLocale(matchedCode, 'dialog.alertdialog.cancel')
+            ]);
+
+            isLanguagePromptOpen = true;
+            const { ok } = await modalStore.confirm({
+                title: promptTitle,
+                description: promptDescription,
+                confirmText: promptConfirmText,
+                cancelText: promptCancelText
+            });
+            isLanguagePromptOpen = false;
+
+            if (!isActive) return;
+
+            // Re-check: user may have manually switched language while the dialog was open
+            const currentLanguage = await configRepository.getString('VRCX_appLanguage');
+            if (currentLanguage || !isActive) return;
+
+            if (ok) {
+                await changeAppLanguage(matchedCode);
+            } else {
+                await changeAppLanguage('en');
+            }
+        } catch (error) {
+            isLanguagePromptOpen = false;
+            console.error('Language detection failed:', error);
+        }
+    }
 
     onBeforeMount(async () => {
         updateSavedCredentials();
+        detectAndPromptLanguage();
     });
 
     onBeforeUnmount(() => {
+        isActive = false;
+        if (isLanguagePromptOpen) {
+            modalStore.handleCancel();
+            isLanguagePromptOpen = false;
+        }
         resetForm({
             values: {
                 username: '',
-                password: '',
-                endpoint: '',
-                websocket: ''
+                password: ''
             }
         });
         loginForm.value.username = '';
@@ -321,8 +404,6 @@
         (formValues) => {
             loginForm.value.username = formValues.username ?? '';
             loginForm.value.password = formValues.password ?? '';
-            loginForm.value.endpoint = formValues.endpoint ?? '';
-            loginForm.value.websocket = formValues.websocket ?? '';
         },
         { deep: true }
     );
@@ -380,7 +461,7 @@
         display: grid;
     }
 
-    .x-saved-account-list > .x-friend-item {
+    .x-saved-account-list > div {
         width: 100%;
     }
 

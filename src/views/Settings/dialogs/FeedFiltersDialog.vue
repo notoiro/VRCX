@@ -8,11 +8,7 @@
                 <div v-for="setting in currentOptions" :key="setting.key" class="mb-[5px] flex items-center">
                     <span class="inline-block min-w-[190px] pr-2.5 text-right"
                         >{{ setting.name
-                        }}<TooltipWrapper
-                            v-if="setting.tooltip"
-                            side="top"
-                            style="margin-left: 5px"
-                            :content="setting.tooltip">
+                        }}<TooltipWrapper class="ml-1.5" v-if="setting.tooltip" side="top" :content="setting.tooltip">
                             <AlertTriangle class="inline-block" v-if="setting.tooltipWarning" />
                             <Info class="inline-block" v-else />
                         </TooltipWrapper>
@@ -39,7 +35,9 @@
                 <template v-if="photonLoggingEnabled">
                     <br />
                     <div class="mb-[5px] flex items-center">
-                        <span class="inline-block min-w-[190px] pr-2.5 text-right">Photon Event Logging</span>
+                        <span class="inline-block min-w-[190px] pr-2.5 text-right">{{
+                            t('view.feed.photon_event_logging')
+                        }}</span>
                     </div>
                     <div
                         v-for="setting in photonFeedFiltersOptions"
@@ -73,9 +71,7 @@
                 <Button variant="secondary" @click="currentResetFunction">{{
                     t('dialog.shared_feed_filters.reset')
                 }}</Button>
-                <Button style="margin-left: 10px" @click="handleDialogClose">{{
-                    t('dialog.shared_feed_filters.close')
-                }}</Button>
+                <Button @click="handleDialogClose">{{ t('dialog.shared_feed_filters.close') }}</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
@@ -93,7 +89,7 @@
     import { ToggleGroup, ToggleGroupItem } from '../../../components/ui/toggle-group';
     import { feedFiltersOptions, sharedFeedFiltersDefaults } from '../../../shared/constants';
 
-    import configRepository from '../../../service/config';
+    import configRepository from '../../../services/config';
 
     const { t } = useI18n();
 

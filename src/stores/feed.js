@@ -1,26 +1,22 @@
-import { ref, shallowReactive, watch } from 'vue';
+import { ref, shallowRef, watch } from 'vue';
 import { defineStore } from 'pinia';
 
-import { database } from '../service/database';
+import { database } from '../services/database';
 import { useFriendStore } from './friend';
-import { useNotificationStore } from './notification';
-import { useSharedFeedStore } from './sharedFeed';
-import { useUiStore } from './ui';
 import { useVrcxStore } from './vrcx';
-import { watchState } from '../service/watchState';
+import { watchState } from '../services/watchState';
 
-import configRepository from '../service/config';
+import configRepository from '../services/config';
 
 export const useFeedStore = defineStore('Feed', () => {
     const friendStore = useFriendStore();
-    const notificationStore = useNotificationStore();
-    const UiStore = useUiStore();
     const vrcxStore = useVrcxStore();
-    const sharedFeedStore = useSharedFeedStore();
 
+    const feedTableData = shallowRef([]);
     const feedTable = ref({
-        data: shallowReactive([]),
         search: '',
+        dateFrom: '',
+        dateTo: '',
         vip: false,
         loading: false,
         filter: [],
@@ -31,7 +27,7 @@ export const useFeedStore = defineStore('Feed', () => {
     watch(
         () => watchState.isLoggedIn,
         (isLoggedIn) => {
-            feedTable.value.data.length = 0;
+            feedTableData.value = [];
             if (isLoggedIn) {
                 initFeedTable();
             }
@@ -61,7 +57,7 @@ export const useFeedStore = defineStore('Feed', () => {
     init();
 
     function feedSearch(row) {
-        const value = feedTable.value.search.toUpperCase();
+        const value = feedTable.value.search.trim().toUpperCase();
         if (!value) {
             return true;
         }
@@ -142,22 +138,40 @@ export const useFeedStore = defineStore('Feed', () => {
             feedTable.value.vip
         );
         feedTable.value.loading = true;
-        let vipList = [];
-        if (feedTable.value.vip) {
-            vipList = Array.from(friendStore.localFavoriteFriends.values());
+        try {
+            let vipList = [];
+            if (feedTable.value.vip) {
+                vipList = Array.from(friendStore.localFavoriteFriends.values());
+            }
+            const search = feedTable.value.search.trim();
+            const { dateFrom, dateTo } = feedTable.value;
+            const rows =
+                search || dateFrom || dateTo
+                    ? await database.searchFeedDatabase(
+                          search,
+                          feedTable.value.filter,
+                          vipList,
+                          vrcxStore.searchLimit,
+                          dateFrom,
+                          dateTo
+                      )
+                    : await database.lookupFeedDatabase(
+                          feedTable.value.filter,
+                          vipList
+                      );
+            feedTableData.value = [];
+            feedTableData.value = [...feedTableData.value, ...rows];
+        } finally {
+            feedTable.value.loading = false;
         }
-        const rows = await database.lookupFeedDatabase(
-            feedTable.value.search,
-            feedTable.value.filter,
-            vipList
-        );
-        feedTable.value.data = shallowReactive(rows);
-        feedTable.value.loading = false;
     }
 
-    function addFeed(feed) {
-        notificationStore.queueFeedNoty(feed);
-        sharedFeedStore.addEntry(feed);
+    /**
+     * Appends a feed entry to the local table if it passes filters.
+     * Does NOT trigger notifications or shared feed — that is the caller's responsibility.
+     * @param {object} feed The feed entry to add.
+     */
+    function addFeedEntry(feed) {
         if (
             feedTable.value.filter.length > 0 &&
             !feedTable.value.filter.includes(feed.type)
@@ -173,28 +187,40 @@ export const useFeedStore = defineStore('Feed', () => {
         if (!feedSearch(feed)) {
             return;
         }
-        feedTable.value.data.push(feed);
+        if (
+            feedTable.value.dateFrom &&
+            feed.created_at < feedTable.value.dateFrom
+        ) {
+            return;
+        }
+        if (
+            feedTable.value.dateTo &&
+            feed.created_at > feedTable.value.dateTo
+        ) {
+            return;
+        }
+        feedTableData.value = [feed, ...feedTableData.value];
         sweepFeed();
-        // UiStore.notifyMenu('feed');
     }
 
     function sweepFeed() {
-        const { data } = feedTable.value;
-        const j = data.length;
+        const j = feedTableData.value.length;
         if (j > vrcxStore.maxTableSize + 50) {
-            data.splice(0, 50);
+            feedTableData.value = feedTableData.value.slice(0, -50);
         }
     }
 
     async function initFeedTable() {
         feedTable.value.loading = true;
-        feedTableLookup();
+        await feedTableLookup();
+        feedTable.value.loading = false;
     }
 
     return {
         feedTable,
+        feedTableData,
         initFeedTable,
         feedTableLookup,
-        addFeed
+        addFeedEntry
     };
 });

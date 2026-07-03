@@ -2,7 +2,7 @@
     <Dialog
         :open="sendInviteRequestResponseDialogVisible"
         @update:open="(open) => (open ? null : cancelSendInviteRequestResponse())">
-        <DialogContent>
+        <DialogContent class="x-dialog sm:max-w-200">
             <DialogHeader>
                 <DialogTitle>{{ t('dialog.invite_request_response_message.header') }}</DialogTitle>
             </DialogHeader>
@@ -11,7 +11,7 @@
             </template>
 
             <DataTableLayout
-                style="margin-top: 10px"
+                style="margin-top: 8px"
                 :table="inviteRequestResponseTable"
                 :loading="false"
                 :show-pagination="false"
@@ -93,17 +93,27 @@
 
     const { table: inviteRequestResponseTable } = useVrcxVueTable({
         persistKey: 'invite-request-response-message',
-        data: inviteRequestResponseRows,
+        get data() {
+            return inviteRequestResponseRows.value;
+        },
         columns: inviteRequestResponseColumns,
         getRowId: (row) => String(row?.slot ?? ''),
         enablePagination: false,
         initialSorting: [{ id: 'slot', desc: false }]
     });
 
+    /**
+     *
+     * @param row
+     */
     function handleInviteRequestResponseRowClick(row) {
         showSendInviteResponseConfirmDialog(row?.original);
     }
 
+    /**
+     *
+     * @param row
+     */
     function showEditAndSendInviteResponseDialog(row) {
         emit('update:sendInviteResponseDialog', { ...props.sendInviteResponseDialog, messageSlot: row });
         editAndSendInviteResponseDialog.value = {
@@ -112,23 +122,37 @@
         };
     }
 
+    /**
+     *
+     * @param row
+     */
     function showSendInviteResponseConfirmDialog(row) {
         emit('update:sendInviteResponseDialog', { ...props.sendInviteResponseDialog, messageSlot: row });
         sendInviteResponseConfirmDialog.value.visible = true;
     }
 
+    /**
+     *
+     */
     function closeInviteDialog() {
         cancelSendInviteRequestResponse();
     }
 
+    /**
+     *
+     */
     function closeResponseConfirmDialog() {
         sendInviteResponseConfirmDialog.value.visible = false;
+        editAndSendInviteResponseDialog.value.visible = false;
     }
 
     // function refreshInviteMessageTableData(...arg) {
     //     inviteMessagesRequest.refreshInviteMessageTableData(arg);
     // }
 
+    /**
+     *
+     */
     function cancelSendInviteRequestResponse() {
         emit('update:sendInviteRequestResponseDialogVisible', false);
     }

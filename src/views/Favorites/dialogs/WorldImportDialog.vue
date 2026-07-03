@@ -1,16 +1,16 @@
 <template>
     <Dialog v-model:open="isVisible">
-        <DialogContent>
+        <DialogContent class="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>{{ t('dialog.world_import.header') }}</DialogTitle>
             </DialogHeader>
             <div style="display: flex; align-items: center; justify-content: space-between">
-                <div style="font-size: 12px">{{ t('dialog.world_import.description') }}</div>
+                <div class="text-xs">{{ t('dialog.world_import.description') }}</div>
                 <div style="display: flex; align-items: center">
                     <div v-if="worldImportDialog.progress">
                         {{ t('dialog.world_import.process_progress') }}
                         {{ worldImportDialog.progress }} / {{ worldImportDialog.progressTotal }}
-                        <Loader2 style="margin: 0 5px" />
+                        <Spinner class="inline-block ml-2 mr-2" />
                     </div>
                     <Button v-if="worldImportDialog.loading" size="sm" variant="outline" @click="cancelWorldImport">
                         {{ t('dialog.world_import.cancel') }}
@@ -20,11 +20,7 @@
                     </Button>
                 </div>
             </div>
-            <InputGroupTextareaField
-                v-model="worldImportDialog.input"
-                :rows="10"
-                style="margin-top: 10px"
-                input-class="resize-none" />
+            <InputGroupTextareaField v-model="worldImportDialog.input" :rows="10" input-class="resize-none mt-2" />
             <div>
                 <div class="mb-2">
                     <div class="flex items-center gap-2">
@@ -48,9 +44,9 @@
                         </Select>
 
                         <Select
+                            class="ml-2"
                             :model-value="worldImportLocalFavoriteGroupSelection"
-                            @update:modelValue="handleWorldImportLocalGroupSelect"
-                            style="margin-left: 10px">
+                            @update:modelValue="handleWorldImportLocalGroupSelect">
                             <SelectTrigger size="sm">
                                 <SelectValue :placeholder="t('dialog.world_import.select_local_group_placeholder')" />
                             </SelectTrigger>
@@ -63,7 +59,7 @@
                             </SelectContent>
                         </Select>
                     </div>
-                    <span v-if="worldImportDialog.worldImportFavoriteGroup" style="margin-left: 5px">
+                    <span class="ml-1.5" v-if="worldImportDialog.worldImportFavoriteGroup">
                         {{ worldImportTable.data.length }} /
                         {{
                             worldImportDialog.worldImportFavoriteGroup.capacity -
@@ -92,8 +88,8 @@
                     </Button>
                 </div>
             </div>
-            <span v-if="worldImportDialog.importProgress" style="margin: 10px">
-                <Loader2 style="margin-right: 5px" />
+            <span class="m-2" v-if="worldImportDialog.importProgress">
+                <Spinner class="inline-block ml-2 mr-2" />
                 {{ t('dialog.world_import.import_progress') }}
                 {{ worldImportDialog.importProgress }}/{{ worldImportDialog.importProgressTotal }}
             </span>
@@ -102,10 +98,10 @@
                 <Button size="sm" variant="secondary" @click="worldImportDialog.errors = ''">
                     {{ t('dialog.world_import.clear_errors') }}
                 </Button>
-                <h2 style="font-weight: bold; margin: 5px 0">
+                <h2 class="my-1.5 mx-0" style="font-weight: bold">
                     {{ t('dialog.world_import.errors') }}
                 </h2>
-                <pre style="white-space: pre-wrap; font-size: 12px" v-text="worldImportDialog.errors"></pre>
+                <pre class="whitespace-pre-wrap text-xs" v-text="worldImportDialog.errors"></pre>
             </template>
             <DataTableLayout
                 class="min-w-0 w-full"
@@ -113,7 +109,7 @@
                 :loading="worldImportDialog.loading"
                 :table-style="tableStyle"
                 :show-pagination="false"
-                style="margin-top: 10px" />
+                style="margin-top: 8px" />
         </DialogContent>
     </Dialog>
 </template>
@@ -125,22 +121,24 @@
     import { Button } from '@/components/ui/button';
     import { DataTableLayout } from '@/components/ui/data-table';
     import { InputGroupTextareaField } from '@/components/ui/input-group';
-    import { Loader2 } from 'lucide-vue-next';
+    import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
     import { useFavoriteStore, useGalleryStore, useUserStore, useWorldStore } from '../../../stores';
+    import { showWorldDialog } from '../../../coordinators/worldCoordinator';
+    import { addLocalWorldFavorite } from '../../../coordinators/favoriteCoordinator';
     import { favoriteRequest, worldRequest } from '../../../api';
     import { createColumns } from './worldImportColumns.jsx';
     import { removeFromArray } from '../../../shared/utils';
     import { useVrcxVueTable } from '../../../lib/table/useVrcxVueTable';
+    import { showUserDialog } from '../../../coordinators/userCoordinator';
 
-    const { showUserDialog } = useUserStore();
     const { favoriteWorldGroups, worldImportDialogInput, worldImportDialogVisible, localWorldFavoriteGroups } =
         storeToRefs(useFavoriteStore());
-    const { localWorldFavGroupLength, addLocalWorldFavorite, getCachedFavoritesByObjectId } = useFavoriteStore();
-    const { showWorldDialog } = useWorldStore();
+    const { localWorldFavGroupLength, getCachedFavoritesByObjectId } = useFavoriteStore();
+
     const { showFullscreenImageDialog } = useGalleryStore();
 
     const emit = defineEmits(['update:worldImportDialogInput']);
@@ -185,7 +183,9 @@
 
     const { table } = useVrcxVueTable({
         persistKey: 'worldImportDialog',
-        data: rows,
+        get data() {
+            return rows.value;
+        },
         columns: columns.value,
         getRowId: (row) => String(row?.id ?? ''),
         enablePagination: false,
@@ -216,11 +216,17 @@
         }
     );
 
+    /**
+     *
+     */
     function resetWorldImport() {
         worldImportDialog.value.input = '';
         worldImportDialog.value.errors = '';
     }
 
+    /**
+     *
+     */
     async function processWorldImportList() {
         const D = worldImportDialog.value;
         D.loading = true;
@@ -255,23 +261,33 @@
                 }
             }
             D.progress++;
-            if (D.progress === worldIdList.size) {
-                D.progress = 0;
-            }
         }
         D.loading = false;
+        D.progress = 0;
+        D.progressTotal = 0;
     }
 
+    /**
+     *
+     * @param ref
+     */
     function deleteItemWorldImport(ref) {
         removeFromArray(worldImportTable.value.data, ref);
         worldImportDialog.value.worldIdList.delete(ref.id);
     }
 
+    /**
+     *
+     */
     function clearWorldImportTable() {
         worldImportTable.value.data = [];
         worldImportDialog.value.worldIdList = new Set();
     }
 
+    /**
+     *
+     * @param group
+     */
     function selectWorldImportGroup(group) {
         worldImportDialog.value.worldImportLocalFavoriteGroup = null;
         worldImportDialog.value.worldImportFavoriteGroup = group;
@@ -279,6 +295,10 @@
         worldImportLocalFavoriteGroupSelection.value = '';
     }
 
+    /**
+     *
+     * @param group
+     */
     function selectWorldImportLocalGroup(group) {
         worldImportDialog.value.worldImportFavoriteGroup = null;
         worldImportDialog.value.worldImportLocalFavoriteGroup = group;
@@ -286,21 +306,35 @@
         worldImportLocalFavoriteGroupSelection.value = group ?? '';
     }
 
+    /**
+     *
+     * @param value
+     */
     function handleWorldImportGroupSelect(value) {
         worldImportFavoriteGroupSelection.value = value;
         const group = favoriteWorldGroups.value.find((g) => g.name === value) ?? null;
         selectWorldImportGroup(group);
     }
 
+    /**
+     *
+     * @param value
+     */
     function handleWorldImportLocalGroupSelect(value) {
         worldImportLocalFavoriteGroupSelection.value = value;
         selectWorldImportLocalGroup(value || null);
     }
 
+    /**
+     *
+     */
     function cancelWorldImport() {
         worldImportDialog.value.loading = false;
     }
 
+    /**
+     *
+     */
     async function importWorldImportTable() {
         const D = worldImportDialog.value;
         if (!D.worldImportFavoriteGroup && !D.worldImportLocalFavoriteGroup) {
@@ -337,6 +371,12 @@
         }
     }
 
+    /**
+     *
+     * @param ref
+     * @param group
+     * @param message
+     */
     function addFavoriteWorld(ref, group, message) {
         return favoriteRequest
             .addFavorite({

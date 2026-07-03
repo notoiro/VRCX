@@ -7,7 +7,7 @@ import {
     getGroupName,
     getWorldName
 } from '../shared/utils';
-import { database } from '../service/database';
+import { database } from '../services/database';
 import { useFriendStore } from './friend';
 import { useInstanceStore } from './instance';
 import { useLocationStore } from './location';
@@ -16,7 +16,7 @@ import { useNotificationStore } from './notification';
 import { useNotificationsSettingsStore } from './settings/notifications';
 import { useUserStore } from './user';
 import { useWristOverlaySettingsStore } from './settings/wristOverlay';
-import { watchState } from '../service/watchState';
+import { watchState } from '../services/watchState';
 
 export const useSharedFeedStore = defineStore('SharedFeed', () => {
     const friendStore = useFriendStore();
@@ -31,14 +31,17 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
     const onPlayerJoining = ref([]);
 
     async function rebuildOnPlayerJoining() {
+        const wristFilter =
+            notificationsSettingsStore.sharedFeedFilters.wrist.OnPlayerJoining;
         let newOnPlayerJoining = [];
         for (const ref of userStore.currentTravelers.values()) {
+            if (!wristFilter || wristFilter === 'Off') {
+                break;
+            }
             const isFavorite = friendStore.localFavoriteFriends.has(ref.id);
             if (
                 locationStore.lastLocation.playerList.has(ref.id) ||
-                (notificationsSettingsStore.sharedFeedFilters.wrist
-                    .OnPlayerJoining === 'VIP' &&
-                    !isFavorite)
+                (wristFilter === 'VIP' && !isFavorite)
             ) {
                 continue;
             }
@@ -93,9 +96,9 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
     );
 
     watch(
-        () => watchState.isLoggedIn,
-        (isLoggedIn) => {
-            if (isLoggedIn) {
+        () => [watchState.isFriendsLoaded, watchState.isFavoritesLoaded],
+        ([isFriendsLoaded, isFavoritesLoaded]) => {
+            if (isFriendsLoaded && isFavoritesLoaded) {
                 sharedFeedData.value = [];
                 loadSharedFeed();
             }
@@ -134,7 +137,6 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
         // Feed
         if (vipFilters.length) {
             const vipFeedRows = await database.lookupFeedDatabase(
-                '',
                 vipFilters,
                 vipList,
                 maxEntries
@@ -143,7 +145,6 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
         }
         if (everyoneAndFriendsFilters.length) {
             const friendsFeedRows = await database.lookupFeedDatabase(
-                '',
                 everyoneAndFriendsFilters,
                 [],
                 maxEntries
@@ -154,7 +155,6 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
         // GameLog
         if (vipFilters.length) {
             const vipGameLogRows = await database.lookupGameLogDatabase(
-                '',
                 vipFilters,
                 vipList,
                 maxEntries
@@ -163,7 +163,6 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
         }
         if (friendsFilters.length) {
             const friendsGameLogRows = await database.lookupGameLogDatabase(
-                '',
                 friendsFilters,
                 friendList,
                 maxEntries
@@ -172,7 +171,6 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
         }
         if (everyoneFilters.length) {
             const everyoneGameLogRows = await database.lookupGameLogDatabase(
-                '',
                 everyoneFilters,
                 [],
                 maxEntries
@@ -241,7 +239,8 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
         rebuildOnPlayerJoining(); // also sends updated feed
     }
 
-    async function addEntry(ctx) {
+    async function addEntry(data) {
+        const ctx = { ...data };
         const userId = ctx.userId || ctx.senderUserId;
         const wristFilter = notificationsSettingsStore.sharedFeedFilters.wrist;
         if (userId === userStore.currentUser.id) {
@@ -360,7 +359,7 @@ export const useSharedFeedStore = defineStore('SharedFeed', () => {
         const wristFilter = notificationsSettingsStore.sharedFeedFilters.wrist;
         // BlockedOnPlayerJoined, BlockedOnPlayerLeft, MutedOnPlayerJoined, MutedOnPlayerLeft
         for (const ref of moderationStore.cachedPlayerModerations.values()) {
-            if (ref.sourceUserId !== ctx.userId) {
+            if (ref.targetUserId !== ctx.userId) {
                 continue;
             }
 
